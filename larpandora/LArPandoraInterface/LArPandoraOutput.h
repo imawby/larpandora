@@ -78,6 +78,7 @@ namespace lar_pandora {
       void Validate() const;
 
       const pandora::Pandora* m_pPrimaryPandora; ///<
+      art::EDProducer* m_pProducer;              ///<
       bool m_shouldRunStitching;                 ///<
       bool
         m_shouldProduceSlices; ///< Whether to produce output slices e.g. may not want to do this if only (re)processing single slices
@@ -91,16 +92,19 @@ namespace lar_pandora {
       bool
         m_isNeutrinoRecoOnlyNoSlicing; ///< If we are running the neutrino reconstruction only with no slicing
       std::string m_hitfinderModuleLabel; ///< The hit finder module label
+      std::string m_instanceLabel; ///< The label for the instance
     };
 
     /**
      *  @brief  Convert the Pandora PFOs into ART clusters and write into ART event
      *
+     *  @param  pPandoraInstane the Pandora instance to use for producing output
      *  @param  settings the settings
      *  @param  idToHitMap the mapping from Pandora hit ID to ART hit
      *  @param  evt the ART event
      */
-    static void ProduceArtOutput(const Settings& settings,
+    static void ProduceArtOutput(const pandora::Pandora *const pPandoraInstance,
+                                 const Settings& settings,
                                  const IdToHitMap& idToHitMap,
                                  art::Event& evt);
 

@@ -46,13 +46,14 @@
 namespace lar_pandora {
 
   void
-  LArPandoraOutput::ProduceArtOutput(const Settings& settings,
+  LArPandoraOutput::ProduceArtOutput(const pandora::Pandora *const pPandoraInstance,
+                                     const Settings& settings,
                                      const IdToHitMap& idToHitMap,
                                      art::Event& evt)
   {
     settings.Validate();
     const std::string instanceLabel(
-      settings.m_shouldProduceAllOutcomes ? settings.m_allOutcomesInstanceLabel : "");
+      settings.m_shouldProduceAllOutcomes ? settings.m_instanceLabel + settings.m_allOutcomesInstanceLabel : settings.m_instanceLabel);
     const std::string testBeamInteractionVertexInstanceLabel(
       instanceLabel + settings.m_testBeamInteractionVerticesInstanceLabel);
 
@@ -99,8 +100,8 @@ namespace lar_pandora {
     // Collect immutable lists of pandora collections that we should convert to ART format
     const pandora::PfoVector pfoVector(
       settings.m_shouldProduceAllOutcomes ?
-        LArPandoraOutput::CollectAllPfoOutcomes(settings.m_pPrimaryPandora) :
-        LArPandoraOutput::CollectPfos(settings.m_pPrimaryPandora));
+        LArPandoraOutput::CollectAllPfoOutcomes(pPandoraInstance) :
+        LArPandoraOutput::CollectPfos(pPandoraInstance));
 
     IdToIdVectorMap pfoToVerticesMap, pfoToTestBeamInteractionVerticesMap;
     const pandora::VertexVector vertexVector(LArPandoraOutput::CollectVertices(
@@ -165,8 +166,9 @@ namespace lar_pandora {
 
     if (settings.m_shouldProduceSlices)
       LArPandoraOutput::BuildSlices(settings,
-                                    settings.m_pPrimaryPandora,
+                                    pPandoraInstance,
                                     evt,
+                                    settings.m_pProducer,
                                     instanceLabel,
                                     pfoVector,
                                     idToHitMap,
@@ -1216,10 +1218,12 @@ namespace lar_pandora {
 
   LArPandoraOutput::Settings::Settings()
     : m_pPrimaryPandora(nullptr)
+    , m_pProducer(nullptr)
     , m_shouldRunStitching(false)
     , m_shouldProduceAllOutcomes(false)
     , m_shouldProduceTestBeamInteractionVertices(false)
     , m_isNeutrinoRecoOnlyNoSlicing(false)
+    , m_instanceLabel("")
   {}
 
   //------------------------------------------------------------------------------------------------------------------------------------------
