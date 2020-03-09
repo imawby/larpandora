@@ -42,6 +42,8 @@
 namespace lar_pandora
 {
 
+LArPandora::LArPandoraArtIOWrapperMap LArPandora::m_pandoraIOMap;
+
 LArPandora::LArPandora(fhicl::ParameterSet const &pset) :
     ILArPandora(pset),
     m_configFile(pset.get<std::string>("ConfigFile")),
@@ -129,6 +131,16 @@ LArPandora::LArPandora(fhicl::ParameterSet const &pset) :
     }
 }
 
+LArPandora::~LArPandora()
+{
+    auto it = m_pandoraIOMap.find(this);
+    if (it != m_pandoraIOMap.end())
+    {
+        delete it->second;
+        m_pandoraIOMap.erase(it);
+    }
+}
+
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 void LArPandora::beginJob()
@@ -174,6 +186,19 @@ void LArPandora::produce(art::Event &evt)
 
 void LArPandora::CreatePandoraInput(art::Event &evt, IdToHitMap &idToHitMap)
 {
+    auto it = m_pandoraIOMap.find(this);
+    LArArtIOWrapper* wrapper{new LArArtIOWrapper(evt, idToHitMap)};
+
+    if (it != m_pandoraIOMap.end())
+    {   // New input, create new wrapper
+        m_pandoraIOMap.insert(std::make_pair(this, wrapper));
+    }
+    else
+    {   // Updated input, replace wrapper
+        delete it->second;
+        it->second = wrapper;
+    }
+
     // ATTN Should complete gap creation in begin job callback, but channel status service functionality unavailable at that point
     if (!m_lineGapsCreated && m_enableDetectorGaps)
     {
