@@ -25,7 +25,7 @@ namespace lar_pandora
  */
 class LArPandora : public ILArPandora
 {
-typedef std::map<const LArPandora*, const LArArtIOWrapper*> LArPandoraArtIOWrapperMap;
+typedef std::map<const pandora::Pandora*, const LArArtIOWrapper*> LArPandoraArtIOWrapperMap;
 
 public:
     /**

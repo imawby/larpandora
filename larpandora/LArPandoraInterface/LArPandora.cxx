@@ -133,7 +133,7 @@ LArPandora::LArPandora(fhicl::ParameterSet const &pset) :
 
 LArPandora::~LArPandora()
 {
-    auto it = m_pandoraIOMap.find(this);
+    auto it = m_pandoraIOMap.find(this->m_pPrimaryPandora);
     if (it != m_pandoraIOMap.end())
     {
         delete it->second;
@@ -186,12 +186,12 @@ void LArPandora::produce(art::Event &evt)
 
 void LArPandora::CreatePandoraInput(art::Event &evt, IdToHitMap &idToHitMap)
 {
-    auto it = m_pandoraIOMap.find(this);
+    auto it = m_pandoraIOMap.find(this->m_pPrimaryPandora);
     LArArtIOWrapper* wrapper{new LArArtIOWrapper(evt, idToHitMap)};
 
     if (it != m_pandoraIOMap.end())
     {   // New input, create new wrapper
-        m_pandoraIOMap.insert(std::make_pair(this, wrapper));
+        m_pandoraIOMap.insert(std::make_pair(this->m_pPrimaryPandora, wrapper));
     }
     else
     {   // Updated input, replace wrapper
