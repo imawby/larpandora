@@ -63,6 +63,7 @@ DEFINE_ART_MODULE(StandardPandora)
 #include "larpandoracontent/LArPlugins/LArPseudoLayerPlugin.h"
 #include "larpandoracontent/LArPlugins/LArRotationalTransformationPlugin.h"
 
+#include "larpandora/LArPandoraInterface/TestIOAlgorithm.h"
 
 namespace lar_pandora
 {
@@ -90,6 +91,9 @@ void StandardPandora::CreatePandoraInstances()
     // ATTN Potentially ill defined, unless coordinate system set up to ensure that all drift volumes have same wire angles and pitches
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::SetPseudoLayerPlugin(*m_pPrimaryPandora, new lar_content::LArPseudoLayerPlugin));
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::SetLArTransformationPlugin(*m_pPrimaryPandora, new lar_content::LArRotationalTransformationPlugin));
+
+    PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::RegisterAlgorithmFactory(
+                *m_pPrimaryPandora, "TestIO", new TestIOAlgorithm::Factory));
 
     MultiPandoraApi::AddPrimaryPandoraInstance(m_pPrimaryPandora);
 }
