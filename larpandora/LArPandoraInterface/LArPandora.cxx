@@ -171,6 +171,13 @@ void LArPandora::beginJob()
     this->ConfigurePandoraInstances();
 }
 
+//------------------------------------------------------------------------------
+
+const LArArtIOWrapper* LArPandora::GetArtIOWrapper(const pandora::Pandora *const pandora)
+{
+    return m_pandoraIOMap[pandora];
+}
+
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 void LArPandora::produce(art::Event &evt)
@@ -187,9 +194,9 @@ void LArPandora::produce(art::Event &evt)
 void LArPandora::CreatePandoraInput(art::Event &evt, IdToHitMap &idToHitMap)
 {
     auto it = m_pandoraIOMap.find(this->m_pPrimaryPandora);
-    LArArtIOWrapper* wrapper{new LArArtIOWrapper(evt, idToHitMap)};
+    LArArtIOWrapper* wrapper{new LArArtIOWrapper(m_outputSettings, idToHitMap, evt)};
 
-    if (it != m_pandoraIOMap.end())
+    if (it == m_pandoraIOMap.end())
     {   // New input, create new wrapper
         m_pandoraIOMap.insert(std::make_pair(this->m_pPrimaryPandora, wrapper));
     }

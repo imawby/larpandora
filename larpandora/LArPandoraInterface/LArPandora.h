@@ -5,6 +5,7 @@
  *
  */
 
+#pragma once
 #ifndef LAR_PANDORA_H
 #define LAR_PANDORA_H 1
 
@@ -39,6 +40,11 @@ public:
 
     void beginJob();
     void produce(art::Event &evt);
+
+    /**
+     *  @brief Return the ArtIO wrapper associated with the primary Pandora instance
+     */
+    static const LArArtIOWrapper* GetArtIOWrapper(const pandora::Pandora *const pandora);
 
 protected:
     void CreatePandoraInput(art::Event &evt, IdToHitMap &idToHitMap);
