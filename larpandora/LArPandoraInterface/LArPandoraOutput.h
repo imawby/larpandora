@@ -80,6 +80,7 @@ public:
         std::string             m_testBeamInteractionVerticesInstanceLabel;  ///< The label for the test beam interaction vertices
         bool                    m_isNeutrinoRecoOnlyNoSlicing;               ///< If we are running the neutrino reconstruction only with no slicing
         std::string             m_hitfinderModuleLabel;                      ///< The hit finder module label
+        std::string             m_instanceLabel;                             ///< The label for the instance
     };
 
     /**

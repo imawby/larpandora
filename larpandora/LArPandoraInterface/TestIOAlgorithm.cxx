@@ -18,22 +18,27 @@ using namespace pandora;
 namespace lar_pandora
 {
 
-TestIOAlgorithm::TestIOAlgorithm()
+TestIOAlgorithm::TestIOAlgorithm() :
+    m_instanceLabel{""}
 {
 }
 
 pandora::StatusCode TestIOAlgorithm::Run()
 {
     const LArArtIOWrapper* artIOWrapper = LArPandora::GetArtIOWrapper(&this->GetPandora());
-    LArPandoraOutput::ProduceArtOutput(artIOWrapper->GetPandoraOutputSettings(),
-            artIOWrapper->GetIdToHitMap(), artIOWrapper->GetEvent());
+    LArPandoraOutput::Settings settings{artIOWrapper->GetPandoraOutputSettings()}; 
+    settings.m_instanceLabel = m_instanceLabel;
+    LArPandoraOutput::ProduceArtOutput(settings, artIOWrapper->GetIdToHitMap(),
+            artIOWrapper->GetEvent());
 
     return STATUS_CODE_SUCCESS;
 }
 
 pandora::StatusCode TestIOAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
 {
-    (void)(xmlHandle);
+    PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND,
+            !=, XmlHelper::ReadValue(xmlHandle, "InstanceLabel", m_instanceLabel));
+
     return STATUS_CODE_SUCCESS;
 }
 

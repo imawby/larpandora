@@ -50,7 +50,7 @@ namespace lar_pandora
 void LArPandoraOutput::ProduceArtOutput(const Settings &settings, const IdToHitMap &idToHitMap, art::Event &evt)
 {
     settings.Validate();
-    const std::string instanceLabel(settings.m_shouldProduceAllOutcomes ? settings.m_allOutcomesInstanceLabel : "");
+    const std::string instanceLabel(settings.m_shouldProduceAllOutcomes ? settings.m_allOutcomesInstanceLabel : settings.m_instanceLabel);
     const std::string testBeamInteractionVertexInstanceLabel(instanceLabel + settings.m_testBeamInteractionVerticesInstanceLabel);
 
     // Set up mandatory output collections
@@ -991,7 +991,8 @@ LArPandoraOutput::Settings::Settings() :
     m_shouldRunStitching(false),
     m_shouldProduceAllOutcomes(false),
     m_shouldProduceTestBeamInteractionVertices(false),
-    m_isNeutrinoRecoOnlyNoSlicing(false)
+    m_isNeutrinoRecoOnlyNoSlicing(false),
+    m_instanceLabel("")
 {
 }
 

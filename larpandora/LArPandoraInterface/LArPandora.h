@@ -5,7 +5,6 @@
  *
  */
 
-#pragma once
 #ifndef LAR_PANDORA_H
 #define LAR_PANDORA_H 1
 

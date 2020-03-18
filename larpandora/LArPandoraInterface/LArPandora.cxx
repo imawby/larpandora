@@ -88,8 +88,17 @@ LArPandora::LArPandora(fhicl::ParameterSet const &pset) :
 
     if (m_enableProduction)
     {
+        std::string allInstanceNames = pset.get<std::string>("InstanceLabels", "");
+        auto iss = std::istringstream{allInstanceNames};
+        std::string instanceName{""};
+
         // Set up the instance names to produces
         std::vector<std::string> instanceNames({""});
+        while (iss >> instanceName)
+        {
+            instanceNames.push_back(instanceName);
+        }
+
         if (m_shouldProduceAllOutcomes)
             instanceNames.push_back(m_allOutcomesInstanceLabel);
 
@@ -175,7 +184,7 @@ void LArPandora::beginJob()
 
 const LArArtIOWrapper* LArPandora::GetArtIOWrapper(const pandora::Pandora *const pandora)
 {
-    return m_pandoraIOMap[pandora];
+    return m_pandoraIOMap.at(pandora);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -185,7 +194,7 @@ void LArPandora::produce(art::Event &evt)
     IdToHitMap idToHitMap;
     this->CreatePandoraInput(evt, idToHitMap);
     this->RunPandoraInstances();
-    this->ProcessPandoraOutput(evt, idToHitMap);
+    //this->ProcessPandoraOutput(evt, idToHitMap);
     this->ResetPandoraInstances();
 }
 

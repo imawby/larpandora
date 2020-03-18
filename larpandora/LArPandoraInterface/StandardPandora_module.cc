@@ -7,6 +7,7 @@
 #include "art/Framework/Core/ModuleMacros.h"
 
 #include "larpandora/LArPandoraInterface/LArPandora.h"
+#include "larpandora/LArPandoraInterface/ArtIOContent.h"
 
 #include <string>
 
@@ -88,12 +89,13 @@ void StandardPandora::CreatePandoraInstances()
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, LArContent::RegisterAlgorithms(*m_pPrimaryPandora));
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, LArContent::RegisterBasicPlugins(*m_pPrimaryPandora));
 
+    // ATTN Art IO-specific bit
+    PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=,
+            ArtIOContent::RegisterAlgorithms(*m_pPrimaryPandora));
+
     // ATTN Potentially ill defined, unless coordinate system set up to ensure that all drift volumes have same wire angles and pitches
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::SetPseudoLayerPlugin(*m_pPrimaryPandora, new lar_content::LArPseudoLayerPlugin));
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::SetLArTransformationPlugin(*m_pPrimaryPandora, new lar_content::LArRotationalTransformationPlugin));
-
-    PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::RegisterAlgorithmFactory(
-                *m_pPrimaryPandora, "TestIO", new TestIOAlgorithm::Factory));
 
     MultiPandoraApi::AddPrimaryPandoraInstance(m_pPrimaryPandora);
 }

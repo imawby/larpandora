@@ -4,7 +4,6 @@
  *  @brief  A wrapper for Art parameters required for input/output to/from Pandora
  */
 
-#pragma once
 #ifndef LAR_ART_IO_WRAPPER_H
 #define LAR_ART_IO_WRAPPER_H 1
 

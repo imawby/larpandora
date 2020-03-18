@@ -6,7 +6,6 @@
  *  $Log: $
  */
 
-#pragma once
 #ifndef LAR_TEST_IO_ALGORITHM_H
 #define LAR_TEST_IO_ALGORITHM_H 1
 
@@ -40,6 +39,8 @@ public:
 private:
     pandora::StatusCode Run();
     pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle);
+
+    std::string m_instanceLabel;
 };
 
 inline pandora::Algorithm *TestIOAlgorithm::Factory::CreateAlgorithm() const
