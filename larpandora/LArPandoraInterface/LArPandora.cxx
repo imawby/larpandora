@@ -100,7 +100,11 @@ LArPandora::LArPandora(fhicl::ParameterSet const &pset) :
         }
 
         if (m_shouldProduceAllOutcomes)
-            instanceNames.push_back(m_allOutcomesInstanceLabel);
+        {
+            const int initSize = instanceNames.size();
+            for (int i = 0; i < initSize; ++i)
+                instanceNames.push_back(instanceNames[i] + m_allOutcomesInstanceLabel);
+        }
 
         for (const std::string &instanceName : instanceNames)
         {
