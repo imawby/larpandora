@@ -28,8 +28,14 @@ pandora::StatusCode TestIOAlgorithm::Run()
     const LArArtIOWrapper* artIOWrapper = LArPandora::GetArtIOWrapper(&this->GetPandora());
     LArPandoraOutput::Settings settings{artIOWrapper->GetPandoraOutputSettings()}; 
     settings.m_instanceLabel = m_instanceLabel;
+    if (settings.m_shouldProduceAllOutcomes)
+    {
+        LArPandoraOutput::ProduceArtOutput(settings, artIOWrapper->GetIdToHitMap(),
+                artIOWrapper->GetEvent());
+    }
+    settings.m_shouldProduceAllOutcomes = false;
     LArPandoraOutput::ProduceArtOutput(settings, artIOWrapper->GetIdToHitMap(),
-            artIOWrapper->GetEvent());
+            artIOWrapper->GetEvent()); 
 
     return STATUS_CODE_SUCCESS;
 }
