@@ -282,13 +282,15 @@ void LArPandora::ProcessPandoraOutput(art::Event &evt, const IdToHitMap &idToHit
     if (m_enableProduction)
     {
         m_outputSettings.m_shouldProduceAllOutcomes = false;
-        LArPandoraOutput::ProduceArtOutput(m_outputSettings, idToHitMap, evt);
+        LArPandoraOutput::ProduceArtOutput(m_outputSettings.m_pPrimaryPandora,
+                m_outputSettings, idToHitMap, evt);
 
         if (m_shouldProduceAllOutcomes)
         {
             m_outputSettings.m_shouldProduceAllOutcomes = true;
             m_outputSettings.m_allOutcomesInstanceLabel = m_allOutcomesInstanceLabel;
-            LArPandoraOutput::ProduceArtOutput(m_outputSettings, idToHitMap, evt);
+            LArPandoraOutput::ProduceArtOutput(m_outputSettings.m_pPrimaryPandora,
+                    m_outputSettings, idToHitMap, evt);
         }
     }
 }

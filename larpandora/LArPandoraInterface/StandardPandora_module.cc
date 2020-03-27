@@ -149,6 +149,13 @@ void StandardPandora::ProvideExternalSteeringParameters(const pandora::Pandora *
     pEventSteeringParameters->m_shouldPerformSliceId = m_shouldPerformSliceId;
     pEventSteeringParameters->m_printOverallRecoStatus = m_printOverallRecoStatus;
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, pandora::ExternallyConfiguredAlgorithm::SetExternalParameters(*pPandora, "LArMaster", pEventSteeringParameters));
+
+    // ATTN Art IO-specific bit
+    uto *const pEventSteeringParametersCopy = new lar_content::MasterAlgorithm::ExternalSteeringParameters(
+            *pEventSteeringParameters);
+    PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=,
+            pandora::ExternallyConfiguredAlgorithm::SetExternalParameters(
+                *pPandora, "ArtIOMaster", pEventSteeringParametersCopy));
 }
 
 } // namespace lar_pandora

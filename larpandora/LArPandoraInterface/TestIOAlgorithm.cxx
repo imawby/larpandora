@@ -30,12 +30,12 @@ pandora::StatusCode TestIOAlgorithm::Run()
     settings.m_instanceLabel = m_instanceLabel;
     if (settings.m_shouldProduceAllOutcomes)
     {
-        LArPandoraOutput::ProduceArtOutput(settings, artIOWrapper->GetIdToHitMap(),
-                artIOWrapper->GetEvent());
+        LArPandoraOutput::ProduceArtOutput(settings.m_pPrimaryPandora, settings,
+                artIOWrapper->GetIdToHitMap(), artIOWrapper->GetEvent());
     }
     settings.m_shouldProduceAllOutcomes = false;
-    LArPandoraOutput::ProduceArtOutput(settings, artIOWrapper->GetIdToHitMap(),
-            artIOWrapper->GetEvent()); 
+    LArPandoraOutput::ProduceArtOutput(settings.m_pPrimaryPandora, settings,
+            artIOWrapper->GetIdToHitMap(), artIOWrapper->GetEvent()); 
 
     return STATUS_CODE_SUCCESS;
 }
