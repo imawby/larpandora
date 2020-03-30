@@ -25,6 +25,7 @@ TestIOAlgorithm::TestIOAlgorithm() :
 
 pandora::StatusCode TestIOAlgorithm::Run()
 {
+    std::cout << "Test is run with " << m_instanceLabel << std::endl;
     const LArArtIOWrapper* artIOWrapper = LArPandora::GetArtIOWrapper(&this->GetPandora());
     LArPandoraOutput::Settings settings{artIOWrapper->GetPandoraOutputSettings()}; 
     settings.m_instanceLabel = m_instanceLabel;

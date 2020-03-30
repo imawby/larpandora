@@ -8,8 +8,10 @@
 #ifndef LAR_ART_IO_MASTER_ALGORITHM_H
 #define LAR_ART_IO_MASTER_ALGORITHM_H 1
 
-#include "larpandoracontent/LArControlFlow/MasterAlgorithm.h"
 #include "Pandora/Pandora.h"
+#include "Pandora/PandoraInternal.h"
+#include "Pandora/PandoraInputTypes.h"
+#include "larpandoracontent/LArControlFlow/MasterAlgorithm.h"
 
 namespace lar_pandora
 {
