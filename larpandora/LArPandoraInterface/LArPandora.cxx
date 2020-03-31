@@ -206,6 +206,7 @@ void LArPandora::produce(art::Event &evt)
 
 void LArPandora::CreatePandoraInput(art::Event &evt, IdToHitMap &idToHitMap)
 {
+    std::cout << "LArPandora::CreatePandoraInput " << this->m_pPrimaryPandora << " " << std::endl;
     auto it = m_pandoraIOMap.find(this->m_pPrimaryPandora);
     LArArtIOWrapper* wrapper{new LArArtIOWrapper(m_outputSettings, idToHitMap, evt)};
 
