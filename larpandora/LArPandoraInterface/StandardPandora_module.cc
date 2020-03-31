@@ -85,24 +85,19 @@ StandardPandora::~StandardPandora()
 
 void StandardPandora::CreatePandoraInstances()
 {
-    std::cout << "StandardPandora::CreatePandoraInstances" << std::endl;
     m_pPrimaryPandora = new pandora::Pandora();
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, LArContent::RegisterAlgorithms(*m_pPrimaryPandora));
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, LArContent::RegisterBasicPlugins(*m_pPrimaryPandora));
 
     // ATTN Art IO-specific bit
-    std::cout << "StandardPandora::CreatePandoraInstances register Art IO" << std::endl;
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=,
             ArtIOContent::RegisterAlgorithms(*m_pPrimaryPandora));
-    std::cout << "StandardPandora::CreatePandoraInstances registered" << std::endl;
 
     // ATTN Potentially ill defined, unless coordinate system set up to ensure that all drift volumes have same wire angles and pitches
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::SetPseudoLayerPlugin(*m_pPrimaryPandora, new lar_content::LArPseudoLayerPlugin));
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::SetLArTransformationPlugin(*m_pPrimaryPandora, new lar_content::LArRotationalTransformationPlugin));
 
-    std::cout << "StandardPandora::CreatePandoraInstances add primart Pandora" << std::endl;
     MultiPandoraApi::AddPrimaryPandoraInstance(m_pPrimaryPandora);
-    std::cout << "StandardPandora::CreatePandoraInstances added" << std::endl;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -123,9 +118,7 @@ void StandardPandora::ConfigurePandoraInstances()
 
 void StandardPandora::RunPandoraInstances()
 {
-    std::cout << "StandardPandora::RunPandoraInstances" << std::endl;
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::ProcessEvent(*m_pPrimaryPandora));
-    std::cout << "StandardPandora::RunPandoraInstances end" << std::endl;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -146,7 +139,6 @@ void StandardPandora::DeletePandoraInstances()
 
 void StandardPandora::ProvideExternalSteeringParameters(const pandora::Pandora *const pPandora) const
 {
-    std::cout << "StandardPandora::ProvideExternalSteeringParameters" << std::endl;
     auto *const pEventSteeringParameters = new lar_content::MasterAlgorithm::ExternalSteeringParameters;
     pEventSteeringParameters->m_shouldRunAllHitsCosmicReco = m_shouldRunAllHitsCosmicReco;
     pEventSteeringParameters->m_shouldRunStitching = m_shouldRunStitching;
@@ -164,7 +156,6 @@ void StandardPandora::ProvideExternalSteeringParameters(const pandora::Pandora *
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=,
             pandora::ExternallyConfiguredAlgorithm::SetExternalParameters(
                 *pPandora, "ArtIOMaster", pEventSteeringParametersCopy));
-    std::cout << "StandardPandora::ProvideExternalSteeringParameters end" << std::endl;
 }
 
 } // namespace lar_pandora

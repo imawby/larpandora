@@ -13,8 +13,6 @@
 #include "Pandora/PandoraInputTypes.h"
 #include "larpandoracontent/LArControlFlow/MasterAlgorithm.h"
 
-#include "Xml/tinyxml.h"
-
 namespace lar_pandora
 {
 
@@ -45,9 +43,6 @@ public:
 
 
 protected:
-    pandora::StatusCode Run();
-    pandora::StatusCode InitializeWorkerInstances();
-    pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle);
     pandora::StatusCode RegisterCustomContent(const pandora::Pandora *const pPandora) const;
 };
 
