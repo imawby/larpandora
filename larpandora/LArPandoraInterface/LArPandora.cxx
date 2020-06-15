@@ -207,7 +207,7 @@ void LArPandora::produce(art::Event &evt)
 void LArPandora::CreatePandoraInput(art::Event &evt, IdToHitMap &idToHitMap)
 {
     auto it = m_pandoraIOMap.find(this->m_pPrimaryPandora);
-    LArArtIOWrapper* wrapper{new LArArtIOWrapper(m_outputSettings, idToHitMap, evt)};
+    LArArtIOWrapper* wrapper{new LArArtIOWrapper(m_inputSettings, m_outputSettings, idToHitMap, m_driftVolumeMap, evt)};
 
     if (it == m_pandoraIOMap.end())
     {   // New input, create new wrapper

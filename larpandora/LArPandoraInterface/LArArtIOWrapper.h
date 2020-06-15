@@ -8,6 +8,7 @@
 #define LAR_ART_IO_WRAPPER_H 1
 
 #include "larpandora/LArPandoraInterface/ILArPandora.h"
+#include "larpandora/LArPandoraInterface/LArPandoraInput.h"
 #include "larpandora/LArPandoraInterface/LArPandoraOutput.h"
 
 namespace art { class Event; }
@@ -24,17 +25,26 @@ public:
     /**
      *  @brief  Constructor
      *
-     *  @param  settings The Pandora output settings
+     *  @param  inputSettings The Pandora input settings
+     *  @param  outputSettings The Pandora output settings
      *  @param  idToHitMap The Art ID to hit map
+     *  @param  driftVolumeMap The drift volume map
      *  @param  event The Art Event
      */
-    LArArtIOWrapper(const LArPandoraOutput::Settings& settings,
-            const IdToHitMap& idToHitMap, art::Event& event);
+    LArArtIOWrapper(const LArPandoraInput::Settings& inputSettings, const LArPandoraOutput::Settings& outputSettings,
+        const IdToHitMap& idToHitMap, const LArDriftVolumeMap& driftVolumeMap, art::Event& event);
 
     /**
      *  @brief  Destructor
      */
     virtual ~LArArtIOWrapper();
+
+    /**
+     *  @brief  Return the Pandora input settings
+     *
+     *  @return The Pandora input settings
+     */
+    const LArPandoraInput::Settings& GetPandoraInputSettings() const;
 
     /**
      *  @brief  Return the Pandora output settings
@@ -51,6 +61,13 @@ public:
     const IdToHitMap& GetIdToHitMap() const;
 
     /**
+     *  @brief  Return the drift volume for the event
+     *
+     *  @return The drift volume
+     */
+    const LArDriftVolumeMap& GetDriftVolumeMap() const;
+
+    /**
      *  @brief  Return the art Event
      *
      *  @return The art Event
@@ -60,8 +77,45 @@ public:
 private:
     art::Event& m_event;
     const IdToHitMap& m_idToHitMap;
-    LArPandoraOutput::Settings m_outputSettings;
+    const LArDriftVolumeMap m_driftVolumeMap;
+    const LArPandoraInput::Settings m_inputSettings;
+    const LArPandoraOutput::Settings m_outputSettings;
 };
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline const LArPandoraInput::Settings& LArArtIOWrapper::GetPandoraInputSettings() const
+{
+    return m_inputSettings;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline const LArPandoraOutput::Settings& LArArtIOWrapper::GetPandoraOutputSettings() const
+{
+    return m_outputSettings;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline const IdToHitMap& LArArtIOWrapper::GetIdToHitMap() const
+{
+    return m_idToHitMap;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline const LArDriftVolumeMap& LArArtIOWrapper::GetDriftVolumeMap() const
+{
+    return m_driftVolumeMap;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline art::Event& LArArtIOWrapper::GetEvent() const
+{
+    return m_event;
+}
 
 }
 
