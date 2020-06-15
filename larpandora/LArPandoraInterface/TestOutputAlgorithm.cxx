@@ -1,12 +1,12 @@
 /**
- *  @file   larpandora/LArPandoraInterface/TestIOAlgorithm.cc
+ *  @file   larpandora/LArPandoraInterface/TestOutputAlgorithm.cc
  *
  *  @brief  Header file for testing of Art IO.
  *
  *  $Log: $
  */
 
-#include "larpandora/LArPandoraInterface/TestIOAlgorithm.h"
+#include "larpandora/LArPandoraInterface/TestOutputAlgorithm.h"
 
 #include "Pandora/AlgorithmHeaders.h"
 #include "larpandora/LArPandoraInterface/LArArtIOWrapper.h"
@@ -19,12 +19,12 @@ using namespace pandora;
 namespace lar_pandora
 {
 
-TestIOAlgorithm::TestIOAlgorithm() :
+TestOutputAlgorithm::TestOutputAlgorithm() :
     m_instanceLabel{""}
 {
 }
 
-pandora::StatusCode TestIOAlgorithm::Run()
+pandora::StatusCode TestOutputAlgorithm::Run()
 {
     const Pandora& pandora = this->GetPandora();
     const Pandora* primaryPandora = nullptr;
@@ -51,7 +51,7 @@ pandora::StatusCode TestIOAlgorithm::Run()
     return STATUS_CODE_SUCCESS;
 }
 
-pandora::StatusCode TestIOAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
+pandora::StatusCode TestOutputAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
 {
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND,
             !=, XmlHelper::ReadValue(xmlHandle, "InstanceLabel", m_instanceLabel));

@@ -64,8 +64,6 @@ DEFINE_ART_MODULE(StandardPandora)
 #include "larpandoracontent/LArPlugins/LArPseudoLayerPlugin.h"
 #include "larpandoracontent/LArPlugins/LArRotationalTransformationPlugin.h"
 
-#include "larpandora/LArPandoraInterface/TestIOAlgorithm.h"
-
 namespace lar_pandora
 {
 

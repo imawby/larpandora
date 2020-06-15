@@ -1,13 +1,13 @@
 /**
- *  @file   larpandora/LArPandoraInterface/TestIOAlgorithm.h
+ *  @file   larpandora/LArPandoraInterface/TestOutputAlgorithm.h
  *
  *  @brief  Header file for testing of Art IO.
  *
  *  $Log: $
  */
 
-#ifndef LAR_TEST_IO_ALGORITHM_H
-#define LAR_TEST_IO_ALGORITHM_H 1
+#ifndef LAR_TEST_OUTPUT_ALGORITHM_H
+#define LAR_TEST_OUTPUT_ALGORITHM_H 1
 
 #include "Pandora/Algorithm.h"
 
@@ -15,17 +15,17 @@ namespace lar_pandora
 {
 
 /**
- *  @brief  TestIOAlgorithm class
+ *  @brief  TestOutputAlgorithm class
  */
-class TestIOAlgorithm : public pandora::Algorithm
+class TestOutputAlgorithm : public pandora::Algorithm
 {
 public:
     /**
      *  @brief  Default constructor
      */
-    TestIOAlgorithm();
+    TestOutputAlgorithm();
 
-    virtual ~TestIOAlgorithm() = default;
+    virtual ~TestOutputAlgorithm() = default;
 
     /**
      *  @brief  Factory class for instantiating algorithm
@@ -43,11 +43,11 @@ private:
     std::string m_instanceLabel;
 };
 
-inline pandora::Algorithm *TestIOAlgorithm::Factory::CreateAlgorithm() const
+inline pandora::Algorithm *TestOutputAlgorithm::Factory::CreateAlgorithm() const
 {
-    return new TestIOAlgorithm();
+    return new TestOutputAlgorithm();
 }
 
 } // namespace lar_content
 
-#endif // #ifndef LAR_TEST_IO_ALGORITHM_H
+#endif // #ifndef LAR_TEST_OUTPUT_ALGORITHM_H
