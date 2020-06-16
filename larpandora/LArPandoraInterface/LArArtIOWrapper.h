@@ -32,7 +32,7 @@ public:
      *  @param  event The Art Event
      */
     LArArtIOWrapper(const LArPandoraInput::Settings& inputSettings, const LArPandoraOutput::Settings& outputSettings,
-        const IdToHitMap& idToHitMap, const LArDriftVolumeMap& driftVolumeMap, art::Event& event);
+        IdToHitMap& idToHitMap, const LArDriftVolumeMap& driftVolumeMap, art::Event& event);
 
     /**
      *  @brief  Destructor
@@ -58,7 +58,7 @@ public:
      *
      *  @return The IdToHitMap
      */
-    const IdToHitMap& GetIdToHitMap() const;
+    IdToHitMap& GetIdToHitMap() const;
 
     /**
      *  @brief  Return the drift volume for the event
@@ -76,7 +76,7 @@ public:
 
 private:
     art::Event& m_event;
-    const IdToHitMap& m_idToHitMap;
+    IdToHitMap& m_idToHitMap;
     const LArDriftVolumeMap m_driftVolumeMap;
     const LArPandoraInput::Settings m_inputSettings;
     const LArPandoraOutput::Settings m_outputSettings;
@@ -98,7 +98,7 @@ inline const LArPandoraOutput::Settings& LArArtIOWrapper::GetPandoraOutputSettin
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
-inline const IdToHitMap& LArArtIOWrapper::GetIdToHitMap() const
+inline IdToHitMap& LArArtIOWrapper::GetIdToHitMap() const
 {
     return m_idToHitMap;
 }

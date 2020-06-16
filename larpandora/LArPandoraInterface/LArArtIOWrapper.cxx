@@ -3,7 +3,7 @@
 using namespace lar_pandora;
 
 LArArtIOWrapper::LArArtIOWrapper(const LArPandoraInput::Settings& inputSettings, const LArPandoraOutput::Settings& outputSettings,
-        const IdToHitMap& idToHitMap, const LArDriftVolumeMap& driftVolumeMap, art::Event& event) :
+    IdToHitMap& idToHitMap, const LArDriftVolumeMap& driftVolumeMap, art::Event& event) :
     m_event{event},
     m_idToHitMap{idToHitMap},
     m_driftVolumeMap{driftVolumeMap},
