@@ -485,7 +485,8 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void
-  LArPandoraInput::CreatePandoraMCParticles(const Settings& settings,
+  LArPandoraInput::CreatePandoraMCParticles(const art::Event& e, 
+                                            const Settings& settings,
                                             const MCTruthToMCParticles& truthToParticleMap,
                                             const MCParticlesToMCTruth& particleToTruthMap,
                                             const RawMCParticleVector& generatorMCParticleVector)
@@ -510,6 +511,8 @@ namespace lar_pandora {
       const art::Ptr<simb::MCParticle> particle = iter->first;
       particleMap[particle->TrackId()] = particle;
     }
+
+    std::cout << "SIZE OF MC PARTICLE MAP: " << particleMap.size() << std::endl;
 
     // Loop over MC truth objects
     int neutrinoCounter(0);
@@ -538,6 +541,8 @@ namespace lar_pandora {
 
         try {
           mcParticleParameters.m_nuanceCode = neutrino.InteractionType();
+	  mcParticleParameters.m_isDR = false;
+	  mcParticleParameters.m_isDecay = false;
           mcParticleParameters.m_energy = neutrino.Nu().E();
           mcParticleParameters.m_momentum =
             pandora::CartesianVector(neutrino.Nu().Px(), neutrino.Nu().Py(), neutrino.Nu().Pz());
@@ -610,6 +615,56 @@ namespace lar_pandora {
     std::map<const simb::MCParticle, bool> primaryGeneratorMCParticleMap;
     LArPandoraInput::FindPrimaryParticles(generatorMCParticleVector, primaryGeneratorMCParticleMap);
 
+      auto simChannelHandle = e.getValidHandle<std::vector<sim::SimChannel>>("tpcrawdecoder:simpleSC");
+      art::ServiceHandle<geo::Geometry const> theGeometry;
+      
+      std::map<int, TVector3> firstLocationMap, finalLocationMap;
+      std::map<int, int> lowestTimeMap, highestTimeMap;
+
+      for (auto const &channel : (*simChannelHandle))
+      {
+	auto const channelNumber = channel.Channel();
+
+	if (theGeometry->SignalType(channelNumber) != geo::kCollection)
+	  continue;
+
+	auto const &timeSlices = channel.TDCIDEMap();
+
+	for (auto const &timeSlice : timeSlices)
+	{
+	  auto const &energyDeposits = timeSlice.second;
+	  for (auto const &energyDeposit : energyDeposits)
+	  {
+	    int particleTrackId = energyDeposit.trackID;
+
+	    if (firstLocationMap.find(particleTrackId) == firstLocationMap.end())
+	    {
+	      firstLocationMap[particleTrackId] = TVector3(energyDeposit.x, energyDeposit.y, energyDeposit.z);
+	    } 
+            else
+            { 
+              if (firstLocationMap.at(particleTrackId)[2] > energyDeposit.z) 
+              {
+		firstLocationMap[particleTrackId] = TVector3(energyDeposit.x, energyDeposit.y, energyDeposit.z);
+	      }
+	    }
+
+	    if (finalLocationMap.find(particleTrackId) == finalLocationMap.end())
+	    {
+	      finalLocationMap[particleTrackId] = TVector3(energyDeposit.x, energyDeposit.y, energyDeposit.z); 
+	    }
+	    else
+	    {
+	      if (finalLocationMap.at(particleTrackId)[2] < energyDeposit.z)
+	      {
+		finalLocationMap[particleTrackId] = TVector3(energyDeposit.x, energyDeposit.y, energyDeposit.z);
+	      }
+	    }
+	  }
+	}
+      }
+      
+
     for (MCParticleMap::const_iterator iterI = particleMap.begin(), iterEndI = particleMap.end();
          iterI != iterEndI;
          ++iterI) {
@@ -635,7 +690,10 @@ namespace lar_pandora {
         lastT = 0;
       }
 
+
+      
       // Lookup position and kinematics at start and end points
+      /*
       const float vtxX(particle->Vx(firstT));
       const float vtxY(particle->Vy(firstT));
       const float vtxZ(particle->Vz(firstT));
@@ -643,6 +701,39 @@ namespace lar_pandora {
       const float endX(particle->Vx(lastT));
       const float endY(particle->Vy(lastT));
       const float endZ(particle->Vz(lastT));
+      */
+
+      TVector3 firstLocation(0.f, 0.f, 0.f), finalLocation(0.f, 0.f, 0.f);
+
+      if (firstLocationMap.find(particle->TrackId()) != firstLocationMap.end())
+	firstLocation = firstLocationMap.at(particle->TrackId());
+
+      if (finalLocationMap.find(particle->TrackId()) != finalLocationMap.end())
+	finalLocation = finalLocationMap.at(particle->TrackId());
+
+
+      const float vtxX(std::abs(particle->PdgCode()) == 13 ? firstLocation[0] : particle->Vx());
+      const float vtxY(std::abs(particle->PdgCode()) == 13 ? firstLocation[1] : particle->Vy());
+      const float vtxZ(std::abs(particle->PdgCode()) == 13 ? firstLocation[2] : particle->Vz());
+
+      const float endX(std::abs(particle->PdgCode()) == 13 ? finalLocation[0] : particle->EndX());
+      const float endY(std::abs(particle->PdgCode()) == 13 ? finalLocation[1] : particle->EndY());
+      const float endZ(std::abs(particle->PdgCode()) == 13 ? finalLocation[2] : particle->EndZ());
+
+
+      //const float vtxX(particle->Vx(firstLocation[0]));
+      //const float vtxY(particle->Vy(firstLocation[1]));
+      //const float vtxZ(particle->Vz(firstLocation[2]));
+
+      //const float endX(particle->Vx(finalLocation[0]));
+      //const float endY(particle->Vy(finalLocation[1]));
+      //const float endZ(particle->Vz(finalLocation[2]));
+
+      //std::cout << "firstLocation: " << "(" << firstLocation[0] << ", " << firstLocation[1] << ", " << firstLocation[2] << ")" << std::endl;
+      //std::cout << "finalLocation: " << "(" << finalLocation[0] << ", " << finalLocation[1] << ", " << finalLocation[2] << ")" << std::endl;
+
+
+ 
 
       const float pX(particle->Px(firstT));
       const float pY(particle->Py(firstT));
@@ -653,6 +744,20 @@ namespace lar_pandora {
       int nuanceCode(0);
       const int trackID(particle->TrackId());
       const simb::Origin_t origin(particleInventoryService->TrackIdToMCTruth(trackID).Origin());
+
+	bool isDR(false);
+	if (particle->Process() == "muIoni")
+	{
+	  //std::cout << "ISOBEL - FOUND DR!" << std::endl;
+	  isDR = true;
+	}
+
+      bool isDecay(false);
+      if (particle->Process() == "Decay")
+      {
+	//std::cout << "ISOBEL - FOUND DECAY!" << std::endl;
+	isDecay = true;
+      }
 
       if (LArPandoraInput::IsPrimaryMCParticle(particle, primaryGeneratorMCParticleMap)) {
         nuanceCode = 2001;
@@ -669,6 +774,8 @@ namespace lar_pandora {
 
       try {
         mcParticleParameters.m_nuanceCode = nuanceCode;
+	mcParticleParameters.m_isDR = isDR;
+	mcParticleParameters.m_isDecay = isDecay;
         mcParticleParameters.m_energy = E;
         mcParticleParameters.m_particleId = particle->PdgCode();
         mcParticleParameters.m_momentum = pandora::CartesianVector(pX, pY, pZ);

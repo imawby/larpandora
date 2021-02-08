@@ -8,7 +8,7 @@
 
     <!-- ALGORITHM SETTINGS -->
      <algorithm type = "LArEventWriting">
-        <EventFileName>Pandora_Events.pndr</EventFileName>
+        <EventFileName>Pandora_Events.xml</EventFileName>
         <ShouldWriteEvents>true</ShouldWriteEvents>
         <ShouldOverwriteEventFile>true</ShouldOverwriteEventFile>
         <ShouldWriteMCRelationships>true</ShouldWriteMCRelationships>

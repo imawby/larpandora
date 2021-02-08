@@ -99,7 +99,8 @@ namespace lar_pandora {
      *  @param  truthToParticles  mapping from MC truth to MC particles
      *  @param  particlesToTruth  mapping from MC particles to MC truth
      */
-    static void CreatePandoraMCParticles(const Settings& settings,
+    static void CreatePandoraMCParticles(const art::Event& e,
+                                         const Settings& settings,
                                          const MCTruthToMCParticles& truthToParticles,
                                          const MCParticlesToMCTruth& particlesToTruth,
                                          const RawMCParticleVector& generatorMCParticleVector);
