@@ -102,6 +102,8 @@ void StandardPandora::CreatePandoraInstances()
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::SetPseudoLayerPlugin(*m_pPrimaryPandora, new lar_content::LArPseudoLayerPlugin));
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::SetLArTransformationPlugin(*m_pPrimaryPandora, new lar_content::LArRotationalTransformationPlugin));
 
+
+
     MultiPandoraApi::AddPrimaryPandoraInstance(m_pPrimaryPandora);
 }
 

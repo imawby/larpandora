@@ -1,3 +1,4 @@
+
 /**
  *  @file   larpandora/LArPandoraInterface/LArPandora.cxx
  *
@@ -117,6 +118,7 @@ namespace lar_pandora {
         produces<art::Assns<recob::PFParticle, recob::Vertex>>(instanceName);
         produces<art::Assns<recob::SpacePoint, recob::Hit>>(instanceName);
         produces<art::Assns<recob::Cluster, recob::Hit>>(instanceName);
+        produces<art::Assns<simb::MCParticle, recob::PFParticle>>(instanceName);
 
         if (m_outputSettings.m_shouldProduceTestBeamInteractionVertices) {
           // ATTN: Test beam interaction vertex instance label appended to current instance name to preserve unique label in multiple instance case

@@ -47,7 +47,7 @@ pandora::StatusCode TestInputAlgorithm::Run()
     PandoraContentApi::GetList(*this, "Input", pCaloHitList);
     std::cout << "The pre-existing input calo hit list " << pCaloHitList << " with length " << pCaloHitList->size() << std::endl;
 
-    LArPandoraInput::CreatePandoraHits2D(settings, artIOWrapper->GetDriftVolumeMap(), artHits, artIOWrapper->GetIdToHitMap());
+    LArPandoraInput::CreatePandoraHits2D(artIOWrapper->GetEvent(), settings, artIOWrapper->GetDriftVolumeMap(), artHits, artIOWrapper->GetIdToHitMap());
 
     PandoraContentApi::GetList(*this, "Input", pCaloHitList);
     std::cout << "The pre-existing input calo hit list " << pCaloHitList << " with length " << pCaloHitList->size() << std::endl;

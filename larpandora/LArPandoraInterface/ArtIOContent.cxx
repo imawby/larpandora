@@ -16,6 +16,7 @@
 #include "larpandora/LArPandoraInterface/TestInputAlgorithm.h"
 #include "larpandora/LArPandoraInterface/TestOutputAlgorithm.h"
 #include "larpandora/LArPandoraInterface/ArtIOMasterAlgorithm.h"
+#include "larpandora/LArPandoraInterface/TestValidationAlgorithm.h"
 
 using namespace pandora;
 
@@ -35,6 +36,9 @@ StatusCode ArtIOContent::RegisterAlgorithms(const Pandora &pandora)
 
     PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::RegisterAlgorithmFactory(
                 pandora, "TestOutput", new lar_pandora::TestOutputAlgorithm::Factory));
+
+    PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::RegisterAlgorithmFactory(
+                pandora, "TestValidation", new lar_content::TestValidationAlgorithm::Factory));
 
     return STATUS_CODE_SUCCESS;
 }

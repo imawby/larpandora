@@ -18,6 +18,8 @@
 #include "larpandora/LArPandoraInterface/ILArPandora.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 
+#include "larpandoracontent/LArHelpers/LArMCParticleHelper.h"
+
 #include "Pandora/PandoraInternal.h"
 
 namespace pandora {
@@ -57,10 +59,13 @@ namespace lar_pandora {
     typedef std::unique_ptr<art::Assns<recob::PFParticle, anab::T0>> PFParticleToT0Collection;
     typedef std::unique_ptr<art::Assns<recob::PFParticle, recob::Slice>>
       PFParticleToSliceCollection;
+    typedef std::unique_ptr<art::Assns<simb::MCParticle, recob::PFParticle>>
+      MCParticleToPFParticleCollection;
 
     typedef std::unique_ptr<art::Assns<recob::Cluster, recob::Hit>> ClusterToHitCollection;
     typedef std::unique_ptr<art::Assns<recob::SpacePoint, recob::Hit>> SpacePointToHitCollection;
     typedef std::unique_ptr<art::Assns<recob::Slice, recob::Hit>> SliceToHitCollection;
+
 
     /**
      *  @brief  Settings class
@@ -95,6 +100,20 @@ namespace lar_pandora {
       std::string m_instanceLabel; ///< The label for the instance
     };
 
+
+  static void AssociateMatches(const pandora::Pandora *const pPandoraInstance,
+			       const Settings& settings,
+			       art::Event& event,
+			       const std::string& instanceLabel,
+			       const lar_content::LArMCParticleHelper::MCParticleToPfoHitSharingMap& mcToPfoMatchingMap);
+
+  static void AssociateMatches(const art::Event& event,
+			       const std::string& instanceLabel,
+			       const pandora::PfoVector& pfoVector,
+			       const lar_content::LArMCParticleHelper::MCParticleToPfoHitSharingMap& mcToPfoMatchingMap,
+			       MCParticleToPFParticleCollection& mcParticleToPFParticleCollection);
+
+
     /**
      *  @brief  Convert the Pandora PFOs into ART clusters and write into ART event
      *
@@ -106,7 +125,8 @@ namespace lar_pandora {
     static void ProduceArtOutput(const pandora::Pandora *const pPandoraInstance,
                                  const Settings& settings,
                                  const IdToHitMap& idToHitMap,
-                                 art::Event& evt);
+                                 art::Event& evt,
+				 const lar_content::LArMCParticleHelper::MCParticleToPfoHitSharingMap mcToPfoMatchingMap = lar_content::LArMCParticleHelper::MCParticleToPfoHitSharingMap());
 
     /**
      *  @brief  Get the address of a pandora instance with a given name
@@ -395,6 +415,7 @@ namespace lar_pandora {
     static void BuildSlices(const Settings& settings,
                             const pandora::Pandora* const pPrimaryPandora,
                             const art::Event& event,
+			    const art::EDProducer *const pProducer,
                             const std::string& instanceLabel,
                             const pandora::PfoVector& pfoVector,
                             const IdToHitMap& idToHitMap,

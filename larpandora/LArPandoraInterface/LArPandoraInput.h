@@ -57,7 +57,7 @@ namespace lar_pandora {
      *  @param  hits the input list of ART hits for this event
      *  @param  idToHitMap to receive the mapping from Pandora hit ID to ART hit
      */
-    static void CreatePandoraHits2D(const art::Event& evt,
+    static void CreatePandoraHits2D(const art::Event& e,
                                     const Settings& settings,
                                     const LArDriftVolumeMap& driftVolumeMap,
                                     const HitVector& hitVector,
