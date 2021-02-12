@@ -8,6 +8,8 @@
 
 #include "Pandora/AlgorithmHeaders.h"
 
+#include "Api/PandoraApi.h"
+
 #include "larpandora/LArPandoraInterface/LArArtIOWrapper.h"
 #include "larpandora/LArPandoraInterface/LArPandora.h"
 #include "larpandora/LArPandoraInterface/LArPandoraOutput.h"
@@ -31,6 +33,14 @@ namespace lar_content
 TestValidationAlgorithm::TestValidationAlgorithm() :
     m_instanceLabel{""}
 {
+    try
+    {
+      PANDORA_MONITORING_API(SaveTree(this->GetPandora(), "ValidationTree", "TestValidation.root", "UPDATE"));
+    }
+    catch (const StatusCodeException &)
+    {
+      std::cout << "EventValidationBaseAlgorithm: Unable to write tree TreeValidation to file TreeValidation.root" << std::endl;
+    }
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -88,6 +98,79 @@ void TestValidationAlgorithm::FillValidationInfo(const MCParticleList *const pMC
     LArMCParticleHelper::MCParticleToPfoHitSharingMap interpretedMCToPfoHitSharingMap;
     this->InterpretMatching(validationInfo, interpretedMCToPfoHitSharingMap);
     validationInfo.SetInterpretedMCToPfoHitSharingMap(interpretedMCToPfoHitSharingMap);
+    /*
+    const PfoList* pParentPfoList(nullptr);
+    PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::GetCurrentPfoList(this->GetPandora(), pParentPfoList));
+
+    PfoList pfoList;
+    LArPfoHelper::GetAllConnectedPfos(*pParentPfoList, pfoList);
+
+    PfoVector pfoVector;
+    pfoVector.insert(pfoVector.end(), pfoList.begin(), pfoList.end());
+    std::sort(pfoVector.begin(), pfoVector.end(), LArPfoHelper::SortByNHits);
+
+    for (auto &entry : interpretedMCToPfoHitSharingMap)
+    {
+      if (entry.second.empty())
+	continue;
+
+      const MCParticle *const pMCParticle(entry.first);
+      const ParticleFlowObject *const pPfo(entry.second.begin()->first);
+
+      int trackID((int)(size_t)(intptr_t*)pMCParticle->GetUid());
+
+
+
+      int pfoID(0); bool found(false);
+      for (unsigned int i = 0; i < pfoVector.size(); ++i)
+      {
+	if (pPfo == pfoVector.at(i))
+	{
+	  pfoID = i;
+	  found = true;
+	  break;
+	}
+      }
+
+      if (!found)
+      {
+	std::cout << "ISOBEL: TEST BEAM EVENT DIDNT FIND PFO" << std::endl;
+      }
+
+      CaloHitList caloHitListU, caloHitListV, caloHitListW;
+      LArPfoHelper::GetCaloHits(pPfo, TPC_VIEW_U, caloHitListU);
+      LArPfoHelper::GetCaloHits(pPfo, TPC_VIEW_V, caloHitListV);
+      LArPfoHelper::GetCaloHits(pPfo, TPC_VIEW_W, caloHitListW);
+
+      int uHits(caloHitListU.size());
+      int vHits(caloHitListV.size());
+      int wHits(caloHitListW.size());
+
+      PfoList childPfos;
+      LArPfoHelper::GetAllDownstreamPfos(pPfo, childPfos);
+
+      std::cout << "/////////////////////////////////" << std::endl;
+      std::cout << "trackID_MC: " << trackID << std::endl;
+      std::cout << "energy_MC: " << pMCParticle->GetEnergy() << std::endl;
+      std::cout << "pdg_MC: " << pMCParticle->GetParticleId() << std::endl;
+      std::cout << "Num of children: " << childPfos.size() << std::endl;
+      std::cout << "Is Track: " << LArPfoHelper::IsTrack(pPfo) << std::endl;
+      std::cout << "ID_PFO: " << pfoID << std::endl;
+      std::cout << "HitsU_PFO: " << uHits << std::endl;
+      std::cout << "HitsV_PFO: " << vHits << std::endl;
+      std::cout << "HitsW_PFO: " << wHits << std::endl;
+
+      PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), "ValidationTree", "trackID_MC", trackID));
+      PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), "ValidationTree", "energy_MC", pMCParticle->GetEnergy()));
+      PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), "ValidationTree", "pdg_MC", pMCParticle->GetParticleId()));
+      PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), "ValidationTree", "ID_PFO", pfoID));
+      PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), "ValidationTree", "HitsU_PFO", uHits));
+      PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), "ValidationTree", "HitsV_PFO", vHits));
+      PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), "ValidationTree", "HitsW_PFO", wHits));
+}
+      */
+
+    PANDORA_MONITORING_API(FillTree(this->GetPandora(), "ValidationTree"));
 
 
     const Pandora& pandora = this->GetPandora();

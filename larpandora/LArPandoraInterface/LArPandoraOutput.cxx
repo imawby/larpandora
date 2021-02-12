@@ -29,6 +29,8 @@
 
 #include "Api/PandoraApi.h"
 
+#include "Pandora/PandoraEnumeratedTypes.h"
+
 #include "Objects/CaloHit.h"
 #include "Objects/Cluster.h"
 #include "Objects/ParticleFlowObject.h"
@@ -132,18 +134,106 @@ namespace lar_pandora {
 	throw;
       } 
 
-      std::cout << "mcPtr: " << mcPtr << std::endl;
-      std::cout << "recoPtr: " << recoPtr << std::endl;
-
       ////////////////////////////////
-      std::cout << "1111111111111" << std::endl;
       mcParticleToPFParticleCollection->addSingle(mcPtr, recoPtr);
-      std::cout << "2222222222222222" << std::endl;
     }
-
 
     event.put(std::move(mcParticleToPFParticleCollection), instanceLabel);
 
+    // Test code
+    //////////////////////////
+    const pandora::PfoList* pParentPfoList(nullptr);
+    PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::GetCurrentPfoList(*pPandoraInstance, pParentPfoList));
+
+    pandora::PfoList pfoList;
+    lar_content::LArPfoHelper::GetAllConnectedPfos(*pParentPfoList, pfoList);
+
+    pandora::PfoVector pfoVector;
+    pfoVector.insert(pfoVector.end(), pfoList.begin(), pfoList.end());
+    std::sort(pfoVector.begin(), pfoVector.end(), lar_content::LArPfoHelper::SortByNHits);
+
+    for (auto &entry : mcToPfoMatchingMap)
+    {
+      if (entry.second.empty())
+	continue;
+
+      const pandora::MCParticle *const pMCParticle(entry.first);
+      const pandora::ParticleFlowObject *const pPfo(entry.second.begin()->first);
+
+      int trackID((int)(size_t)(intptr_t*)pMCParticle->GetUid());
+
+      int pfoID(0); bool found(false);
+      for (unsigned int i = 0; i < pfoVector.size(); ++i)
+      {
+	if (pPfo == pfoVector.at(i))
+	{
+	  pfoID = i;
+	  found = true;
+	  break;
+	}
+      }
+
+      if (!found)
+      {
+	std::cout << "ISOBEL: TEST BEAM EVENT DIDNT FIND PFO" << std::endl;
+      }
+
+      pandora::CaloHitList caloHitListU, caloHitListV, caloHitListW;
+      lar_content::LArPfoHelper::GetCaloHits(pPfo, pandora::TPC_VIEW_U, caloHitListU);
+      lar_content::LArPfoHelper::GetCaloHits(pPfo, pandora::TPC_VIEW_V, caloHitListV);
+      lar_content::LArPfoHelper::GetCaloHits(pPfo, pandora::TPC_VIEW_W, caloHitListW);
+
+      int uHits(caloHitListU.size());
+      int vHits(caloHitListV.size());
+      int wHits(caloHitListW.size());
+
+      pandora::CaloHitList isolatedCaloHitListU, isolatedCaloHitListV, isolatedCaloHitListW;
+      lar_content::LArPfoHelper::GetIsolatedCaloHits(pPfo, pandora::TPC_VIEW_U, isolatedCaloHitListU);
+      lar_content::LArPfoHelper::GetIsolatedCaloHits(pPfo, pandora::TPC_VIEW_V, isolatedCaloHitListV);
+      lar_content::LArPfoHelper::GetIsolatedCaloHits(pPfo, pandora::TPC_VIEW_W, isolatedCaloHitListW);
+
+      int isolatedHitsU(isolatedCaloHitListU.size());
+      int isolatedHitsV(isolatedCaloHitListV.size());
+      int isolatedHitsW(isolatedCaloHitListW.size());
+
+      pandora::CaloHitList threeDHits;
+      lar_content::LArPfoHelper::GetCaloHits(pPfo, pandora::TPC_3D, threeDHits);
+
+      int hits3D = threeDHits.size();
+
+      pandora::PfoList childPfos;
+      lar_content::LArPfoHelper::GetAllDownstreamPfos(pPfo, childPfos);
+
+      const pandora::ParticleFlowObject* const pParent(lar_content::LArPfoHelper::GetParentPfo(pPfo));
+      const float x0(pParent->GetPropertiesMap().count("X0") ? pParent->GetPropertiesMap().at("X0") : 0.f);
+      auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
+      auto const det_prop =
+        art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(event, clock_data);
+      const double cm_per_tick(det_prop.GetXTicksCoefficient());
+      const double ns_per_tick(sampling_rate(clock_data));
+
+      // ATTN: T0 values are currently calculated in nanoseconds relative to the trigger offset. Only non-zero values are outputted.
+      const double T0(x0 * ns_per_tick / cm_per_tick);
+
+      if (std::fabs(T0) > std::numeric_limits<float>::epsilon())
+      {
+      std::cout << "/////////////////////////////////" << std::endl;
+      std::cout << "trackID_MC: " << trackID << std::endl;
+      std::cout << "energy_MC: " << pMCParticle->GetEnergy() << std::endl;
+      std::cout << "pdg_MC: " << pMCParticle->GetParticleId() << std::endl;
+      std::cout << "Num of children: " << childPfos.size() << std::endl;
+      std::cout << "Is Track: " << lar_content::LArPfoHelper::IsTrack(pPfo) << std::endl;
+      std::cout << "ID_PFO: " << pfoID << std::endl;
+      std::cout << "HitsU_PFO: " << uHits << std::endl;
+      std::cout << "HitsV_PFO: " << vHits << std::endl;
+      std::cout << "HitsW_PFO: " << wHits << std::endl;
+      std::cout << "IsolatedHitsU_PFO: " << isolatedHitsU << std::endl;
+      std::cout << "IsolatedHitsV_PFO: " << isolatedHitsV << std::endl;
+      std::cout << "IsolatedHitsW_PFO: " << isolatedHitsW << std::endl;
+      std::cout << "Hits3D: " << hits3D << std::endl;
+      std::cout << "T0: " << T0 << std::endl;
+      }
+    }
   }
 
 
@@ -280,9 +370,6 @@ namespace lar_pandora {
     SpacePointToHitCollection outputSpacePointsToHits(
       new art::Assns<recob::SpacePoint, recob::Hit>);
     SliceToHitCollection outputSlicesToHits(new art::Assns<recob::Slice, recob::Hit>);
-    //MCParticleToPFParticleCollection mcParticleToPFParticleCollection(
-    //new art::Assns<simb::MCParticle, recob::PFParticle>);
-
 
     // Set up optional output associations
     PFParticleToVertexCollection outputParticlesToTestBeamInteractionVertices(

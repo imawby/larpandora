@@ -122,8 +122,8 @@ namespace lar_pandora {
         caloHitParameters.m_pParentAddress = (void*)((intptr_t)(++hitCounter));
         caloHitParameters.m_larTPCVolumeId =
           LArPandoraGeometry::GetVolumeID(driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
-        caloHitParameters.m_daughterVolumeId = 
-          LArPandoraGeometry::GetDaughterVolumeID(driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
+        //caloHitParameters.m_daughterVolumeId = 
+	//LArPandoraGeometry::GetDaughterVolumeID(driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
 
         const geo::View_t pandora_GlobalView(
           LArPandoraGeometry::GetGlobalView(hit_WireID.Cryostat, hit_WireID.TPC, hit_View));
@@ -492,6 +492,12 @@ namespace lar_pandora {
                                             const MCParticlesToMCTruth& particleToTruthMap,
                                             const RawMCParticleVector& generatorMCParticleVector)
   {
+
+
+    std::cout << "I AM HERE ISOBEL, HERE I AM" << std::endl;
+
+
+
     mf::LogDebug("LArPandora") << " *** LArPandoraInput::CreatePandoraMCParticles(...) *** "
                                << std::endl;
     art::ServiceHandle<cheat::ParticleInventoryService const> particleInventoryService;
@@ -512,6 +518,8 @@ namespace lar_pandora {
       const art::Ptr<simb::MCParticle> particle = iter->first;
       particleMap[particle->TrackId()] = particle;
     }
+
+    std::cout << "particleMap.size(): " << particleMap.size() << std::endl;
 
     // Loop over MC truth objects
     int neutrinoCounter(0);
@@ -649,7 +657,8 @@ namespace lar_pandora {
       const float pX(particle->Px(firstT));
       const float pY(particle->Py(firstT));
       const float pZ(particle->Pz(firstT));
-      const float E(particle->E(firstT));
+      //const float E(particle->E(firstT));
+      const float E(particle->E());
 
       // Find the source of the mc particle
       int nuanceCode(0);
@@ -678,6 +687,8 @@ namespace lar_pandora {
         mcParticleParameters.m_endpoint = pandora::CartesianVector(endX, endY, endZ);
         mcParticleParameters.m_mcParticleType = pandora::MC_3D;
         mcParticleParameters.m_pParentAddress = (void*)((intptr_t)particle->TrackId());
+
+	//auto jam = (long int)(intptr_t*)((void*)((intptr_t)particle->TrackId()));
       }
       catch (const pandora::StatusCodeException&) {
         mf::LogWarning("LArPandora")
