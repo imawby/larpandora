@@ -540,6 +540,8 @@ namespace lar_pandora {
 
         try {
           mcParticleParameters.m_nuanceCode = neutrino.InteractionType();
+	  mcParticleParameters.m_isDR = false;
+	  mcParticleParameters.m_isDecay = false;
           mcParticleParameters.m_energy = neutrino.Nu().E();
           mcParticleParameters.m_momentum =
             pandora::CartesianVector(neutrino.Nu().Px(), neutrino.Nu().Py(), neutrino.Nu().Pz());
@@ -654,6 +656,15 @@ namespace lar_pandora {
       // Find the source of the mc particle
       int nuanceCode(0);
       const int trackID(particle->TrackId());
+
+      bool isDR(false);
+      if (particle->Process() == "muIoni")
+	isDR = true;
+
+      bool isDecay(false);
+      if (particle->Process() == "Decay")
+	isDecay = true;
+
       const simb::Origin_t origin(particleInventoryService->TrackIdToMCTruth(trackID).Origin());
 
       if (LArPandoraInput::IsPrimaryMCParticle(particle, primaryGeneratorMCParticleMap)) {
@@ -671,6 +682,8 @@ namespace lar_pandora {
 
       try {
         mcParticleParameters.m_nuanceCode = nuanceCode;
+	mcParticleParameters.m_isDR = isDR;
+	mcParticleParameters.m_isDecay = isDecay;
         mcParticleParameters.m_energy = E;
         mcParticleParameters.m_particleId = particle->PdgCode();
         mcParticleParameters.m_momentum = pandora::CartesianVector(pX, pY, pZ);
