@@ -40,6 +40,15 @@ public:
      */
     ~DeltaRayValidationAlgorithm();
 
+    /**
+     *  @brief  Factory class for instantiating algorithm
+     */
+    class Factory : public pandora::AlgorithmFactory
+    {
+    public:
+      pandora::Algorithm *CreateAlgorithm() const;
+    };
+
 private:
     /**
      *  @brief  Fill the validation info containers
@@ -98,6 +107,11 @@ private:
 
     std::string m_instanceLabel;
 };
+
+ inline pandora::Algorithm *DeltaRayValidationAlgorithm::Factory::CreateAlgorithm() const
+ {
+   return new DeltaRayValidationAlgorithm();
+ }
 
 } // namespace lar_content
 

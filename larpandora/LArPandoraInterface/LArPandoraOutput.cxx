@@ -95,7 +95,8 @@ namespace lar_pandora {
       ////////////////////////////////
 
       ////////////////////////////////
-      // Need to identify art::Ptr<recob::PFParticle>
+      // Need to create art::Ptr<recob::PFParticle>
+      // ATTN: Cannot pull out std::vector<art::Ptr<recob::PFParticle>> from file
       const pandora::ParticleFlowObject *const pPfo(matchingIter->second.begin()->first);
 
       const pandora::PfoVector pfoVector(
@@ -113,215 +114,14 @@ namespace lar_pandora {
 
       size_t pfoIndex(pfoIter - pfoVector.begin());
 
-      PFParticleVector recoParticleVector;
-      LArPandoraHelper:: CollectPFParticles(event, "pandora", recoParticleVector);
-
-      bool found2(false);
-      art::Ptr<recob::PFParticle> recoPtr(recoParticleVector.front());
-      for (art::Ptr<recob::PFParticle> recobPFParticle : recoParticleVector)
-      {
-	size_t selfId((size_t)recobPFParticle->Self());
-	if (selfId != pfoIndex)
-	  continue;
-
-	recoPtr = recobPFParticle;
-	found2 = true;
-      }
-
-      if (!found2)
-      {
-	std::cout << "ISOBEL: NO RECO PFPARTICLE FOUND - CRY" << std::endl;
-	throw;
-      } 
-
+      const art::PtrMaker<recob::PFParticle> makePtr(event, instanceLabel);
+      art::Ptr<recob::PFParticle> pointer(makePtr(pfoIndex));
       ////////////////////////////////
-      mcParticleToPFParticleCollection->addSingle(mcPtr, recoPtr);
+
+      mcParticleToPFParticleCollection->addSingle(mcPtr, pointer);
     }
 
     event.put(std::move(mcParticleToPFParticleCollection), instanceLabel);
-
-    // Test code
-    //////////////////////////
-    const pandora::PfoList* pParentPfoList(nullptr);
-    PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::GetCurrentPfoList(*pPandoraInstance, pParentPfoList));
-
-    pandora::PfoList pfoList;
-    lar_content::LArPfoHelper::GetAllConnectedPfos(*pParentPfoList, pfoList);
-
-    pandora::PfoVector pfoVector;
-    pfoVector.insert(pfoVector.end(), pfoList.begin(), pfoList.end());
-    std::sort(pfoVector.begin(), pfoVector.end(), lar_content::LArPfoHelper::SortByNHits);
-
-    for (auto &entry : mcToPfoMatchingMap)
-    {
-      if (entry.second.empty())
-	continue;
-
-      const pandora::MCParticle *const pMCParticle(entry.first);
-      const pandora::ParticleFlowObject *const pPfo(entry.second.begin()->first);
-
-      int trackID((int)(size_t)(intptr_t*)pMCParticle->GetUid());
-
-      int pfoID(0); bool found(false);
-      for (unsigned int i = 0; i < pfoVector.size(); ++i)
-      {
-	if (pPfo == pfoVector.at(i))
-	{
-	  pfoID = i;
-	  found = true;
-	  break;
-	}
-      }
-
-      if (!found)
-      {
-	std::cout << "ISOBEL: TEST BEAM EVENT DIDNT FIND PFO" << std::endl;
-      }
-
-      pandora::CaloHitList caloHitListU, caloHitListV, caloHitListW;
-      lar_content::LArPfoHelper::GetCaloHits(pPfo, pandora::TPC_VIEW_U, caloHitListU);
-      lar_content::LArPfoHelper::GetCaloHits(pPfo, pandora::TPC_VIEW_V, caloHitListV);
-      lar_content::LArPfoHelper::GetCaloHits(pPfo, pandora::TPC_VIEW_W, caloHitListW);
-
-      int uHits(caloHitListU.size());
-      int vHits(caloHitListV.size());
-      int wHits(caloHitListW.size());
-
-      pandora::CaloHitList isolatedCaloHitListU, isolatedCaloHitListV, isolatedCaloHitListW;
-      lar_content::LArPfoHelper::GetIsolatedCaloHits(pPfo, pandora::TPC_VIEW_U, isolatedCaloHitListU);
-      lar_content::LArPfoHelper::GetIsolatedCaloHits(pPfo, pandora::TPC_VIEW_V, isolatedCaloHitListV);
-      lar_content::LArPfoHelper::GetIsolatedCaloHits(pPfo, pandora::TPC_VIEW_W, isolatedCaloHitListW);
-
-      int isolatedHitsU(isolatedCaloHitListU.size());
-      int isolatedHitsV(isolatedCaloHitListV.size());
-      int isolatedHitsW(isolatedCaloHitListW.size());
-
-      pandora::CaloHitList threeDHits;
-      lar_content::LArPfoHelper::GetCaloHits(pPfo, pandora::TPC_3D, threeDHits);
-
-      int hits3D = threeDHits.size();
-
-      pandora::PfoList childPfos;
-      lar_content::LArPfoHelper::GetAllDownstreamPfos(pPfo, childPfos);
-
-      const pandora::ParticleFlowObject* const pParent(lar_content::LArPfoHelper::GetParentPfo(pPfo));
-      const float x0(pParent->GetPropertiesMap().count("X0") ? pParent->GetPropertiesMap().at("X0") : 0.f);
-      auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
-      auto const det_prop =
-        art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(event, clock_data);
-      const double cm_per_tick(det_prop.GetXTicksCoefficient());
-      const double ns_per_tick(sampling_rate(clock_data));
-
-      // ATTN: T0 values are currently calculated in nanoseconds relative to the trigger offset. Only non-zero values are outputted.
-      const double T0(x0 * ns_per_tick / cm_per_tick);
-
-      if (std::fabs(T0) > std::numeric_limits<float>::epsilon())
-      {
-      std::cout << "/////////////////////////////////" << std::endl;
-      std::cout << "trackID_MC: " << trackID << std::endl;
-      std::cout << "energy_MC: " << pMCParticle->GetEnergy() << std::endl;
-      std::cout << "pdg_MC: " << pMCParticle->GetParticleId() << std::endl;
-      std::cout << "Num of children: " << childPfos.size() << std::endl;
-      std::cout << "Is Track: " << lar_content::LArPfoHelper::IsTrack(pPfo) << std::endl;
-      std::cout << "ID_PFO: " << pfoID << std::endl;
-      std::cout << "HitsU_PFO: " << uHits << std::endl;
-      std::cout << "HitsV_PFO: " << vHits << std::endl;
-      std::cout << "HitsW_PFO: " << wHits << std::endl;
-      std::cout << "IsolatedHitsU_PFO: " << isolatedHitsU << std::endl;
-      std::cout << "IsolatedHitsV_PFO: " << isolatedHitsV << std::endl;
-      std::cout << "IsolatedHitsW_PFO: " << isolatedHitsW << std::endl;
-      std::cout << "Hits3D: " << hits3D << std::endl;
-      std::cout << "T0: " << T0 << std::endl;
-      }
-    }
-  }
-
-
-
-
-  void
-  LArPandoraOutput::AssociateMatches(
-    const art::Event& event,
-    const std::string& instanceLabel,
-    const pandora::PfoVector& pfoVector,
-    const lar_content::LArMCParticleHelper::MCParticleToPfoHitSharingMap& mcToPfoMatchingMap,
-    MCParticleToPFParticleCollection& mcParticleToPFParticleCollection)
-  {
-    std::cout << "ENTERED ASSOCIATIONS FUNCTION" << std::endl;
-
-    for (auto matchingIter = mcToPfoMatchingMap.begin(); matchingIter != mcToPfoMatchingMap.end(); ++matchingIter)
-    {
-      const pandora::MCParticle *const pMCParticle(matchingIter->first);
-
-      std::cout << "AAAAAAA" << std::endl;
-
-      if (matchingIter->second.empty())
-	continue;
-
-      ////////////////////////////////
-      // Need to identify art::Ptr<simb::MCParticle>
-      std::cout << "BBBB" << std::endl;
-
-      size_t mcIndex((size_t)(intptr_t*)pMCParticle->GetUid());
-
-      std::cout << "CCC" << std::endl;
-
-      MCParticleVector mcParticleVector;
-      LArPandoraHelper::CollectMCParticles(event, "largeant", mcParticleVector);
-
-      std::cout << "DDD" << std::endl;
-
-      if (mcParticleVector.empty())
-	std::cout << "ISOBEL THE COLLECTED MC VECTOR IS EMPTY!" << std::endl;
-
-      bool found(false);
-      art::Ptr<simb::MCParticle> mcPtr(mcParticleVector.front());
-      for (art::Ptr<simb::MCParticle> simbMCParticle : mcParticleVector)
-      {
-	size_t trackId((size_t)simbMCParticle->TrackId());
-	if (trackId != mcIndex)
-	  continue;
-
-	mcPtr = simbMCParticle;
-	found = true;
-      }
-
-      std::cout << "EEE" << std::endl;
-
-      if (!found)
-      {
-	std::cout << "ISOBEL: NO MC PARTICLE FOUND - CRY" << std::endl;
-	throw;
-      } 
-      ////////////////////////////////
-
-      std::cout << "fff" << std::endl;
-
-      ////////////////////////////////
-      // Need to get pfo index
-      const pandora::ParticleFlowObject *const pPfo(matchingIter->second.begin()->first);
-
-      auto pfoIter(std::find(pfoVector.begin(), pfoVector.end(), pPfo));
-
-      if (pfoIter == pfoVector.end())
-      {
-	std::cout << "ISOBEL: NOT IN PFO VECTOR - WELP" << std::endl;
-	throw;
-      }
-
-      std::cout << "GGGGGG" << std::endl;
-
-      size_t pfoIndex(pfoIter - pfoVector.begin());
-      ////////////////////////////////
-
-      std::cout << "HHH" << std::endl;
-
-      LArPandoraOutput::AddAssociation(
-          event, instanceLabel, mcPtr.key(), pfoIndex, mcParticleToPFParticleCollection);
-
-      std::cout << "IIII" << std::endl;
-    }
-    std::cout << "LEAVING ASSOCIATIONS ALGORITHM" << std::endl;
   }
 
   void
@@ -330,9 +130,7 @@ namespace lar_pandora {
                                      const IdToHitMap& idToHitMap,
                                      art::Event& evt,
 				     const lar_content::LArMCParticleHelper::MCParticleToPfoHitSharingMap mcToPfoMatchingMap)
-
   {
-
     std::cout << "PRODUCING ART OUTPUT... " << std::endl;
 
     settings.Validate();
@@ -469,14 +267,6 @@ namespace lar_pandora {
                                                     pfoVector,
                                                     pfoToTestBeamInteractionVerticesMap,
 						    outputParticlesToTestBeamInteractionVertices);
-    /*
-    if (!mcToPfoMatchingMap.empty())
-      LArPandoraOutput::AssociateMatches(evt,
-					 instanceLabel,
-					 pfoVector,
-					 mcToPfoMatchingMap,
-					 mcParticleToPFParticleCollection);
-    */
 
     // Add the outputs to the event
     evt.put(std::move(outputParticles), instanceLabel);
@@ -508,14 +298,9 @@ namespace lar_pandora {
       evt.put(std::move(outputSlices), instanceLabel);
       evt.put(std::move(outputSlicesToHits), instanceLabel);
     }
-    /*
+
     if (!mcToPfoMatchingMap.empty())
-      evt.put(std::move(mcParticleToPFParticleCollection), instanceLabel);
-    */
-
-    LArPandoraOutput::AssociateMatches(pPandoraInstance, settings, evt, instanceLabel, mcToPfoMatchingMap);
-
-
+      LArPandoraOutput::AssociateMatches(pPandoraInstance, settings, evt, instanceLabel, mcToPfoMatchingMap);
   }
 
   //------------------------------------------------------------------------------------------------------------------------------------------
@@ -1013,10 +798,15 @@ namespace lar_pandora {
                                      PFParticleToSpacePointCollection& outputParticlesToSpacePoints,
                                      PFParticleToClusterCollection& outputParticlesToClusters)
   {
+
+    unsigned int count(0);
+
     for (unsigned int pfoId = 0; pfoId < pfoVector.size(); ++pfoId) {
       const pandora::ParticleFlowObject* const pPfo(pfoVector.at(pfoId));
 
       outputParticles->push_back(LArPandoraOutput::BuildPFParticle(pPfo, pfoId, pfoVector));
+
+      ++count;
 
       // Associations from PFParticle
       if (pfoToVerticesMap.find(pfoId) != pfoToVerticesMap.end())
@@ -1031,6 +821,8 @@ namespace lar_pandora {
         LArPandoraOutput::AddAssociation(
           event, instanceLabel, pfoId, pfoToArtClustersMap, outputParticlesToClusters);
     }
+
+    std::cout << "count: " << count << std::endl;
   }
 
   //------------------------------------------------------------------------------------------------------------------------------------------

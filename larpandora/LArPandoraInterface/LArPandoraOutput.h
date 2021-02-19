@@ -100,19 +100,11 @@ namespace lar_pandora {
       std::string m_instanceLabel; ///< The label for the instance
     };
 
-
-  static void AssociateMatches(const pandora::Pandora *const pPandoraInstance,
-			       const Settings& settings,
-			       art::Event& event,
-			       const std::string& instanceLabel,
-			       const lar_content::LArMCParticleHelper::MCParticleToPfoHitSharingMap& mcToPfoMatchingMap);
-
-  static void AssociateMatches(const art::Event& event,
-			       const std::string& instanceLabel,
-			       const pandora::PfoVector& pfoVector,
-			       const lar_content::LArMCParticleHelper::MCParticleToPfoHitSharingMap& mcToPfoMatchingMap,
-			       MCParticleToPFParticleCollection& mcParticleToPFParticleCollection);
-
+    static void AssociateMatches(const pandora::Pandora *const pPandoraInstance,
+				 const Settings& settings,
+				 art::Event& event,
+				 const std::string& instanceLabel,
+				 const lar_content::LArMCParticleHelper::MCParticleToPfoHitSharingMap& mcToPfoMatchingMap);
 
     /**
      *  @brief  Convert the Pandora PFOs into ART clusters and write into ART event
