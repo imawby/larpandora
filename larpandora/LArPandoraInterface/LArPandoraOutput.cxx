@@ -51,7 +51,7 @@
 #include <limits>
 
 namespace lar_pandora {
-
+  
   void
   LArPandoraOutput::AssociateMatches(const pandora::Pandora *const pPandoraInstance,
                                      const Settings& settings,
@@ -123,7 +123,7 @@ namespace lar_pandora {
 
     event.put(std::move(mcParticleToPFParticleCollection), instanceLabel);
   }
-
+  
   void
   LArPandoraOutput::ProduceArtOutput(const pandora::Pandora *const pPandoraInstance,
                                      const Settings& settings,
@@ -298,9 +298,10 @@ namespace lar_pandora {
       evt.put(std::move(outputSlices), instanceLabel);
       evt.put(std::move(outputSlicesToHits), instanceLabel);
     }
-
-    if (!mcToPfoMatchingMap.empty())
+    
+    //if (!mcToPfoMatchingMap.empty())
       LArPandoraOutput::AssociateMatches(pPandoraInstance, settings, evt, instanceLabel, mcToPfoMatchingMap);
+    
   }
 
   //------------------------------------------------------------------------------------------------------------------------------------------

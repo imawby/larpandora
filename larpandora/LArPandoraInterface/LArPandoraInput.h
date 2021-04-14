@@ -99,7 +99,8 @@ namespace lar_pandora {
      *  @param  truthToParticles  mapping from MC truth to MC particles
      *  @param  particlesToTruth  mapping from MC particles to MC truth
      */
-    static void CreatePandoraMCParticles(const Settings& settings,
+    static void CreatePandoraMCParticles(art::Event& evt,
+                                         const Settings& settings,
                                          const MCTruthToMCParticles& truthToParticles,
                                          const MCParticlesToMCTruth& particlesToTruth,
                                          const RawMCParticleVector& generatorMCParticleVector);
@@ -133,7 +134,6 @@ namespace lar_pandora {
                                        const HitMap& hitMap,
                                        const HitsToTrackIDEs& hitToParticleMap);
 
-  private:
     /**
      *  @brief  Loop over MC trajectory points and identify start and end points within the detector
      *
@@ -142,10 +142,21 @@ namespace lar_pandora {
      *  @param  startT the first trajectory point in the detector
      *  @param  endT the last trajectory point in the detector
      */
-    static void GetTrueStartAndEndPoints(const Settings& settings,
-                                         const art::Ptr<simb::MCParticle>& particle,
+    static void GetTrueStartAndEndPoints(const art::Ptr<simb::MCParticle>& particle,
                                          int& startT,
                                          int& endT);
+
+    /**
+     *  @brief  Use detector and time services to get a true X offset for a given trajectory point
+     *
+     *  @param  evt event currently being processing by art
+     *  @param  particle the true particle
+     *  @param  nT the trajectory point
+     */
+    static float GetTrueX0(const art::Event& evt,
+                           const art::Ptr<simb::MCParticle>& particle,
+                           const int nT);
+  private:
 
     /**
      *  @brief  Loop over MC trajectory points and identify start and end points within a given cryostat and TPC
@@ -161,18 +172,6 @@ namespace lar_pandora {
                                          const art::Ptr<simb::MCParticle>& particle,
                                          int& startT,
                                          int& endT);
-
-    /**
-     *  @brief  Use detector and time services to get a true X offset for a given trajectory point
-     *
-     *  @param  evt event currently being processing by art
-     *  @param  particle the true particle
-     *  @param  nT the trajectory point
-     */
-    static float GetTrueX0(const art::Event& evt,
-                           const art::Ptr<simb::MCParticle>& particle,
-                           const int nT);
-
     /**
      *  @brief  Convert charge in ADCs to approximate MIPs
      *

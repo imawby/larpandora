@@ -275,7 +275,8 @@ namespace lar_pandora {
       evt, m_inputSettings, m_driftVolumeMap, artHits, idToHitMap);
 
     if (m_enableMCParticles && (m_disableRealDataCheck || !evt.isRealData())) {
-      LArPandoraInput::CreatePandoraMCParticles(m_inputSettings,
+      LArPandoraInput::CreatePandoraMCParticles(evt, 
+                                                m_inputSettings,
                                                 artMCTruthToMCParticles,
                                                 artMCParticlesToMCTruth,
                                                 generatorArtMCParticleVector);

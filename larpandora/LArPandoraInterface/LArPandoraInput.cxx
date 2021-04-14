@@ -14,6 +14,7 @@
 
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h" 
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -487,16 +488,13 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void
-  LArPandoraInput::CreatePandoraMCParticles(const Settings& settings,
+  LArPandoraInput::CreatePandoraMCParticles(art::Event& evt,
+                                            const Settings& settings,
                                             const MCTruthToMCParticles& truthToParticleMap,
                                             const MCParticlesToMCTruth& particleToTruthMap,
                                             const RawMCParticleVector& generatorMCParticleVector)
   {
-
-
-    std::cout << "I AM HERE ISOBEL, HERE I AM" << std::endl;
-
-
+    std::cout << "ISOBEL MAKING PANDORA MC PARTICLES..." << std::endl;
 
     mf::LogDebug("LArPandora") << " *** LArPandoraInput::CreatePandoraMCParticles(...) *** "
                                << std::endl;
@@ -545,7 +543,6 @@ namespace lar_pandora {
 
         // Create Pandora 3D MC Particle
         lar_content::LArMCParticleParameters mcParticleParameters;
-
         try {
           mcParticleParameters.m_nuanceCode = neutrino.InteractionType();
 	  mcParticleParameters.m_isDR = false;
@@ -640,7 +637,7 @@ namespace lar_pandora {
 
       // Find start and end trajectory points
       int firstT(-1), lastT(-1);
-      LArPandoraInput::GetTrueStartAndEndPoints(settings, particle, firstT, lastT);
+      LArPandoraInput::GetTrueStartAndEndPoints(particle, firstT, lastT);
 
       if (firstT < 0 && lastT < 0) {
         firstT = 0;
@@ -648,13 +645,13 @@ namespace lar_pandora {
       }
 
       // Lookup position and kinematics at start and end points
-      const float vtxX(particle->Vx(firstT));
-      const float vtxY(particle->Vy(firstT));
-      const float vtxZ(particle->Vz(firstT));
+      float vtxX(particle->Vx(firstT));
+      float vtxY(particle->Vy(firstT));
+      float vtxZ(particle->Vz(firstT));
 
-      const float endX(particle->Vx(lastT));
-      const float endY(particle->Vy(lastT));
-      const float endZ(particle->Vz(lastT));
+      float endX(particle->Vx(lastT));
+      float endY(particle->Vy(lastT));
+      float endZ(particle->Vz(lastT));
 
       const float pX(particle->Px(firstT));
       const float pY(particle->Py(firstT));
@@ -662,6 +659,48 @@ namespace lar_pandora {
       const float E(particle->E(firstT));
       //const float E(particle->E());
 
+
+      // Apply space charge corrections
+      /*
+      auto const* SCE = lar::providerFrom<spacecharge::SpaceChargeService>();
+      auto gptVertex = geo::Point_t(vtxX, vtxY, vtxZ);
+      auto gptEnd = geo::Point_t(endX, endY, endZ);
+      
+      auto sceVertexOffset = geo::Point_t(0.f, 0.f, 0.f);
+      auto sceEndOffset = geo::Point_t(0.f, 0.f, 0.f);
+      
+      //if (SCE->EnableCorrSCE())
+      //{
+	sceVertexOffset = SCE->GetPosOffsets(gptVertex);
+	sceEndOffset = SCE->GetPosOffsets(gptEnd);
+	//}
+
+      vtxX -= sceVertexOffset.X();
+      vtxY += sceVertexOffset.Y();
+      vtxZ += sceVertexOffset.Z();
+
+      endX -= sceEndOffset.X();
+      endY += sceEndOffset.Y();
+      endZ += sceEndOffset.Z();
+
+
+      // Apply time offset corrections
+      try 
+      {
+	vtxX +=  LArPandoraInput::GetTrueX0(evt, particle, firstT);
+      }
+      catch (...)
+      {
+      }
+
+      try
+      {
+	endX += LArPandoraInput::GetTrueX0(evt, particle, lastT);
+      }
+      catch (...)
+      {
+      }
+      */
       // Find the source of the mc particle
       int nuanceCode(0);
       const int trackID(particle->TrackId());
@@ -845,8 +884,7 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void
-  LArPandoraInput::GetTrueStartAndEndPoints(const Settings& settings,
-                                            const art::Ptr<simb::MCParticle>& particle,
+  LArPandoraInput::GetTrueStartAndEndPoints(const art::Ptr<simb::MCParticle>& particle,
                                             int& firstT,
                                             int& lastT)
   {

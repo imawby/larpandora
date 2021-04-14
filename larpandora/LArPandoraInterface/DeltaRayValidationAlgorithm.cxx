@@ -58,66 +58,9 @@ void DeltaRayValidationAlgorithm::FillValidationInfo(const MCParticleList *const
 {    
     this->FillDeltaRayValidationInfo(pMCParticleList, pCaloHitList, pPfoList, validationInfo);
 
-    if (m_ignoreIncorrectMuons)
-    {
-        MCParticleList incorrectlyReconstructedCosmicRays;
-        this->DetermineIncorrectlyReconstructedMuons(pMCParticleList, pCaloHitList, pPfoList, incorrectlyReconstructedCosmicRays);
+    std::cout << "interpreted matching map size: " << validationInfo.GetInterpretedMCToPfoHitSharingMap().size() << std::endl;
 
-        LArMCParticleHelper::MCContributionMap allMCToHitsMap(validationInfo.GetAllMCParticleToHitsMap());
-        LArMCParticleHelper::MCContributionMap targetMCToHitsMap(validationInfo.GetTargetMCParticleToHitsMap());
-        LArMCParticleHelper::MCParticleToPfoHitSharingMap matchingMap(validationInfo.GetMCToPfoHitSharingMap());
-        LArMCParticleHelper::MCParticleToPfoHitSharingMap interpretedMatchingMap(validationInfo.GetInterpretedMCToPfoHitSharingMap());
-
-        for (const MCParticle *const pIncorrectCosmicRay : incorrectlyReconstructedCosmicRays)
-        {
-            auto allIter(allMCToHitsMap.find(pIncorrectCosmicRay));
-
-            if (allIter != allMCToHitsMap.end())
-                allMCToHitsMap.erase(allIter);
-
-            auto targetIter(targetMCToHitsMap.find(pIncorrectCosmicRay));
-
-            if (targetIter != targetMCToHitsMap.end())
-                targetMCToHitsMap.erase(targetIter);
-
-            auto matchingIter(matchingMap.find(pIncorrectCosmicRay));
-
-            if (matchingIter != matchingMap.end())
-                matchingMap.erase(matchingIter);
-            
-            auto interpretedMatchingIter(interpretedMatchingMap.find(pIncorrectCosmicRay));
-
-            if (interpretedMatchingIter != interpretedMatchingMap.end())
-                interpretedMatchingMap.erase(interpretedMatchingIter);
-        }
-
-        validationInfo.SetAllMCParticleToHitsMap(allMCToHitsMap);
-        validationInfo.SetTargetMCParticleToHitsMap(targetMCToHitsMap);
-        validationInfo.SetMCToPfoHitSharingMap(matchingMap);
-        validationInfo.SetInterpretedMCToPfoHitSharingMap(interpretedMatchingMap);
-    }
-
-    const Pandora& pandora = this->GetPandora();
-    const Pandora* primaryPandora = nullptr;
-    try
-    {
-        primaryPandora = MultiPandoraApi::GetPrimaryPandoraInstance(&pandora);
-    }
-    catch(const StatusCodeException&)
-    {   // This is the primary pandora instance
-        primaryPandora = &this->GetPandora();
-    }
-    const lar_pandora::LArArtIOWrapper* artIOWrapper = lar_pandora::LArPandora::GetArtIOWrapper(primaryPandora);
-    lar_pandora::LArPandoraOutput::Settings settings{artIOWrapper->GetPandoraOutputSettings()}; 
-    settings.m_instanceLabel = m_instanceLabel;
-    if (settings.m_shouldProduceAllOutcomes)
-    {
-      lar_pandora::LArPandoraOutput::ProduceArtOutput(settings.m_pPrimaryPandora, settings,
-						      artIOWrapper->GetIdToHitMap(), artIOWrapper->GetEvent(), validationInfo.GetInterpretedMCToPfoHitSharingMap());
-    }
-    settings.m_shouldProduceAllOutcomes = false;
-    lar_pandora::LArPandoraOutput::ProduceArtOutput(settings.m_pPrimaryPandora, settings,
-						    artIOWrapper->GetIdToHitMap(), artIOWrapper->GetEvent(), validationInfo.GetInterpretedMCToPfoHitSharingMap());
+    this->WriteOutput(validationInfo);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -248,8 +191,97 @@ void DeltaRayValidationAlgorithm::DetermineIncorrectlyReconstructedMuons(const M
         if (nAboveThresholdMatches != 1)
             incorrectlyReconstructedCosmicRays.push_back(pTargetCosmicRay);
     }
+}       
 
-    // Write matches into .root files
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void DeltaRayValidationAlgorithm::WriteOutput(const ValidationInfo &validationInfo) const
+{
+    // Folded hit ownership/sharing maps for leading muon ionisation particles
+    const LArMCParticleHelper::MCContributionMap &foldedAllMCToHitsMap(validationInfo.GetAllMCParticleToHitsMap());
+    const LArMCParticleHelper::MCContributionMap &foldedTargetMCToHitsMap(validationInfo.GetTargetMCParticleToHitsMap());
+    const LArMCParticleHelper::PfoContributionMap &foldedPfoToHitsMap(validationInfo.GetPfoToHitsMap());
+    const LArMCParticleHelper::MCParticleToPfoHitSharingMap &foldedMCToPfoHitSharingMap(validationInfo.GetInterpretedMCToPfoHitSharingMap());
+
+    LArMCParticleHelper::MCParticleToPfoHitSharingMap bestMatchMap;
+    
+    // Consider only delta rays from reconstructable CR muons
+    MCParticleVector mcCRVector;
+    for (auto &entry : foldedTargetMCToHitsMap)
+    {
+        if (LArMCParticleHelper::IsCosmicRay(entry.first))
+            mcCRVector.push_back(entry.first);
+    }
+    std::sort(mcCRVector.begin(), mcCRVector.end(), LArMCParticleHelper::SortByMomentum);
+
+    // Process matches
+    for (const MCParticle *const pCosmicRay : mcCRVector)
+    {
+        // Move on if cosmic ray has not been reconstructed
+        if (foldedMCToPfoHitSharingMap.at(pCosmicRay).empty())
+            continue;
+
+        // Obtain reconstructable leading particles
+        MCParticleVector childLeadingParticles;
+        for (const MCParticle *const pMuonChild : pCosmicRay->GetDaughterList())
+        {
+            if (!(m_michelMode || m_deltaRayMode))
+                continue;
+                        
+            if (m_deltaRayMode)
+            {
+                if (!LArMuonLeadingHelper::IsDeltaRay(pMuonChild))
+                    continue;
+            }
+
+            if (m_michelMode)
+            {
+                if (!LArMuonLeadingHelper::IsMichel(pMuonChild))
+                    continue;
+            }
+
+            // Move on if leading particle is not reconstructable
+            LArMCParticleHelper::MCContributionMap::const_iterator iter(foldedTargetMCToHitsMap.find(pMuonChild));
+            if (iter == foldedTargetMCToHitsMap.end())
+                continue;
+
+            childLeadingParticles.push_back(pMuonChild);
+        }
+
+        // Move on if cosmic ray has no leading delta ray child particles
+        if (childLeadingParticles.empty())
+            continue;
+        
+        std::sort(childLeadingParticles.begin(), childLeadingParticles.end(), LArMCParticleHelper::SortByMomentum);
+
+        // Pull delta ray data
+        for (const MCParticle *const pLeadingParticle : childLeadingParticles)
+        {
+            // Pull delta ray MC info
+            const CaloHitList &leadingParticleHitList(foldedAllMCToHitsMap.at(pLeadingParticle));
+
+            // Look at the pfo matches
+            int nAboveThresholdMatches(0);
+            for (const LArMCParticleHelper::PfoCaloHitListPair &pfoToSharedHits : foldedMCToPfoHitSharingMap.at(pLeadingParticle))
+            {
+                const ParticleFlowObject *const pMatchedPfo(pfoToSharedHits.first);
+                const CaloHitList &pfoHitList(foldedPfoToHitsMap.at(pMatchedPfo));
+                const CaloHitList &sharedHitList(pfoToSharedHits.second);
+
+                const bool isGoodMatch(this->IsGoodMatch(leadingParticleHitList, pfoHitList, sharedHitList));
+
+                if (isGoodMatch)
+                    ++nAboveThresholdMatches;
+
+                if ((nAboveThresholdMatches == 1) && isGoodMatch)
+                {
+		  bestMatchMap.insert(LArMCParticleHelper::MCParticleToPfoHitSharingMap::value_type(pLeadingParticle, 
+												    {LArMCParticleHelper::PfoCaloHitListPair(pMatchedPfo, sharedHitList)}));
+                }
+	    }
+	}
+    }
+
     const Pandora& pandora = this->GetPandora();
     const Pandora* primaryPandora = nullptr;
     try
@@ -260,25 +292,31 @@ void DeltaRayValidationAlgorithm::DetermineIncorrectlyReconstructedMuons(const M
     {   // This is the primary pandora instance
         primaryPandora = &this->GetPandora();
     }
-
     const lar_pandora::LArArtIOWrapper* artIOWrapper = lar_pandora::LArPandora::GetArtIOWrapper(primaryPandora);
     lar_pandora::LArPandoraOutput::Settings settings{artIOWrapper->GetPandoraOutputSettings()}; 
     settings.m_instanceLabel = m_instanceLabel;
-
     if (settings.m_shouldProduceAllOutcomes)
     {
+      /*
       lar_pandora::LArPandoraOutput::ProduceArtOutput(settings.m_pPrimaryPandora, settings,
-						      artIOWrapper->GetIdToHitMap(), artIOWrapper->GetEvent(), interpretedMCToPfoHitSharingMap);
+						      artIOWrapper->GetIdToHitMap(), artIOWrapper->GetEvent(), bestMatchMap);
+      */
+      lar_pandora::LArPandoraOutput::ProduceArtOutput(settings.m_pPrimaryPandora, settings,
+						      artIOWrapper->GetIdToHitMap(), artIOWrapper->GetEvent(), foldedMCToPfoHitSharingMap);
     }
-
     settings.m_shouldProduceAllOutcomes = false;
+    /*
     lar_pandora::LArPandoraOutput::ProduceArtOutput(settings.m_pPrimaryPandora, settings,
-						    artIOWrapper->GetIdToHitMap(), artIOWrapper->GetEvent(), interpretedMCToPfoHitSharingMap);
-}       
+						    artIOWrapper->GetIdToHitMap(), artIOWrapper->GetEvent(), bestMatchMap);
+    */
+    lar_pandora::LArPandoraOutput::ProduceArtOutput(settings.m_pPrimaryPandora, settings,
+						    artIOWrapper->GetIdToHitMap(), artIOWrapper->GetEvent(), foldedMCToPfoHitSharingMap);
 
-//------------------------------------------------------------------------------------------------------------------------------------------
+    std::cout << "BEST MATCH MAP SIZE: (ISOBEL THIS IS THE WRONG MAP)" << bestMatchMap.size() << std::endl;
+}
+
     
-  void DeltaRayValidationAlgorithm::ProcessOutput(const ValidationInfo &/*validationInfo*/, const bool /*useInterpretedMatching*/, const bool /*printToScreen*/, const bool /*fillTree*/) const
+void DeltaRayValidationAlgorithm::ProcessOutput(const ValidationInfo &/*validationInfo*/, const bool /*useInterpretedMatching*/, const bool /*printToScreen*/, const bool /*fillTree*/) const
 {
   /*
     // Folded hit ownership/sharing maps for leading muon ionisation particles

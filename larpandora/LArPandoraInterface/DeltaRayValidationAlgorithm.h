@@ -67,6 +67,8 @@ private:
     void FillDeltaRayValidationInfo(const pandora::MCParticleList *const pMCParticleList, const pandora::CaloHitList *const pCaloHitList,
         const pandora::PfoList *const pPfoList, ValidationInfo &validationInfo) const;
 
+    void WriteOutput(const ValidationInfo &validationInfo) const;
+
     typedef std::unordered_map<const pandora::ParticleFlowObject*, unsigned int> PfoToIdMap;
 
     /**
