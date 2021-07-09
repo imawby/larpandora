@@ -540,6 +540,8 @@ namespace lar_pandora {
 
         try {
           mcParticleParameters.m_nuanceCode = neutrino.InteractionType();
+          mcParticleParameters.m_process = lar_content::MC_PROC_INCIDENT_NU;
+          mcParticleParameters.m_isNC = neutrino.CCNC();
           mcParticleParameters.m_energy = neutrino.Nu().E();
           mcParticleParameters.m_momentum =
             pandora::CartesianVector(neutrino.Nu().Px(), neutrino.Nu().Py(), neutrino.Nu().Pz());
@@ -670,7 +672,20 @@ namespace lar_pandora {
       lar_content::LArMCParticleParameters mcParticleParameters;
 
       try {
+        MCProcessMap processMap;
+        FillMCProcessMap(processMap);
         mcParticleParameters.m_nuanceCode = nuanceCode;
+        if (processMap.find(particle->Process()) != processMap.end())
+        {
+          mcParticleParameters.m_process = processMap[particle->Process()];
+        }
+        else
+        { 
+          mcParticleParameters.m_process = lar_content::MC_PROC_UNKNOWN;
+          mf::LogWarning("LArPandora") << "CreatePandoraMCParticles - found an unkown process" << std::endl;
+        }
+        const art::Ptr<simb::MCTruth> truth = particleToTruthMap.at(particle);
+        mcParticleParameters.m_isNC = truth->GetNeutrino().CCNC();
         mcParticleParameters.m_energy = E;
         mcParticleParameters.m_particleId = particle->PdgCode();
         mcParticleParameters.m_momentum = pandora::CartesianVector(pX, pY, pZ);
@@ -926,6 +941,36 @@ namespace lar_pandora {
     if (mips > settings.m_mips_max) mips = settings.m_mips_max;
 
     return mips;
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void
+  LArPandoraInput::FillMCProcessMap(MCProcessMap &processMap)
+  {
+      processMap["unknown"] = lar_content::MC_PROC_UNKNOWN;
+      processMap["primary"] = lar_content::MC_PROC_PRIMARY;
+      processMap["compt"] = lar_content::MC_PROC_COMPT;
+      processMap["phot"] = lar_content::MC_PROC_PHOT;
+      processMap["annihil"] = lar_content::MC_PROC_ANNIHIL;
+      processMap["eIoni"] = lar_content::MC_PROC_E_IONI;
+      processMap["eBrem"] = lar_content::MC_PROC_E_BREM;
+      processMap["conv"] = lar_content::MC_PROC_CONV;
+      processMap["muIoni"] = lar_content::MC_PROC_MU_IONI;
+      processMap["muMinusCaptureAtRest"] = lar_content::MC_PROC_MU_MINUS_CAPTURE_AT_REST;
+      processMap["neutronInelastic"] = lar_content::MC_PROC_NEUTRON_INELASTIC;
+      processMap["nCapture"] = lar_content::MC_PROC_N_CAPTURE;
+      processMap["hadElastic"] = lar_content::MC_PROC_HAD_ELASTIC;
+      processMap["Decay"] = lar_content::MC_PROC_DECAY;
+      processMap["CoulombScat"] = lar_content::MC_PROC_COULOMB_SCAT;
+      processMap["muBrems"] = lar_content::MC_PROC_MU_BREM;
+      processMap["muPairProd"] = lar_content::MC_PROC_MU_PAIR_PROD;
+      processMap["PhotonInelastic"] = lar_content::MC_PROC_PHOTON_INELASTIC;
+      processMap["hIoni"] = lar_content::MC_PROC_HAD_IONI;
+      processMap["protonInelastic"] = lar_content::MC_PROC_PROTON_INELASTIC;
+      processMap["pi+Inelastic"] = lar_content::MC_PROC_PI_PLUS_INELASTIC;
+      processMap["CHIPSNuclearCaptureAtRest"] = lar_content::MC_PROC_CHIPS_NUCLEAR_CAPTURE_AT_REST;
+      processMap["pi-Inelastic"] = lar_content::MC_PROC_PI_MINUS_INELASTIC;
   }
 
   //------------------------------------------------------------------------------------------------------------------------------------------
