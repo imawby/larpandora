@@ -644,6 +644,25 @@ namespace lar_pandora {
       const float vtxY(particle->Vy(firstT));
       const float vtxZ(particle->Vz(firstT));
 
+
+      TVector3 trueStartPos = {vtxX, vtxY, vtxZ};
+      // If the true particle is a photon, we need to be smarter.
+      // Select the first traj point where tne photon loses energy
+      if (abs(particle->PdgCode()) == 22)
+      {
+          double initialEnergy = particle->E();
+          unsigned int TrajPoints = particle->NumberTrajectoryPoints();
+
+          for (unsigned int trajPoint = 0; trajPoint < TrajPoints; trajPoint++)
+          {
+              if (particle->E(trajPoint) < initialEnergy)
+              {
+                  trueStartPos = particle->Position(trajPoint).Vect();
+                  break;
+              }
+          }
+      }
+
       const float endX(particle->Vx(lastT));
       const float endY(particle->Vy(lastT));
       const float endZ(particle->Vz(lastT));
@@ -689,7 +708,7 @@ namespace lar_pandora {
         mcParticleParameters.m_energy = E;
         mcParticleParameters.m_particleId = particle->PdgCode();
         mcParticleParameters.m_momentum = pandora::CartesianVector(pX, pY, pZ);
-        mcParticleParameters.m_vertex = pandora::CartesianVector(vtxX, vtxY, vtxZ);
+        mcParticleParameters.m_vertex = pandora::CartesianVector(trueStartPos.X(), trueStartPos.Y(), trueStartPos.Z());
         mcParticleParameters.m_endpoint = pandora::CartesianVector(endX, endY, endZ);
         mcParticleParameters.m_mcParticleType = pandora::MC_3D;
         mcParticleParameters.m_pParentAddress = (void*)((intptr_t)particle->TrackId());
