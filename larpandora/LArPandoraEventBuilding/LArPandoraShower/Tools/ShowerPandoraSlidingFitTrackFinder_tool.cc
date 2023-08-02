@@ -70,6 +70,7 @@ namespace ShowerRecoTools{
     InitialiseProduct<std::vector<recob::Track> >(fInitialTrackOutputLabel);
     InitialiseProduct<art::Assns<recob::Shower, recob::Track > >("ShowerTrackAssn");
     InitialiseProduct<art::Assns<recob::Track, recob::Hit > >("ShowerTrackHitAssn");
+    InitialiseProduct<art::Assns<recob::Track, recob::SpacePoint > >("ShowerTrackSpacePointAssn");
 
   }
 
@@ -242,6 +243,13 @@ namespace ShowerRecoTools{
 
     for(auto const& TrackHit: TrackHits){
       AddSingle<art::Assns<recob::Track, recob::Hit> >(trackptr,TrackHit,"ShowerTrackHitAssn");
+    }
+
+    std::vector<art::Ptr<recob::SpacePoint> > SpacePoints;
+    ShowerEleHolder.GetElement(fInitialTrackSpacePointsInputLabel,SpacePoints);
+
+    for(auto const& SpacePoint : SpacePoints) {
+      AddSingle<art::Assns<recob::Track, recob::SpacePoint> >(trackptr, SpacePoint, "ShowerTrackSpacePointAssn");
     }
 
     return 0;
