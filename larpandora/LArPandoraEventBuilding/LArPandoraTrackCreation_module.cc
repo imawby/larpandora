@@ -42,7 +42,8 @@ namespace lar_pandora {
     recob::Track BuildTrack(const int id,
                             const lar_content::LArTrackStateVector& trackStateVector) const;
 
-    std::string m_pfParticleLabel;       ///< The pf particle label
+    std::string m_pfParticleLabel;       ///< The pf particle module label
+    std::string m_pfParticleInstance;    ///< The pf particle instance label
     unsigned int m_minTrajectoryPoints;  ///< The minimum number of trajectory points
     unsigned int m_slidingFitHalfWindow; ///< The sliding fit half window
     bool m_useAllParticles;              ///< Build a recob::Track for every recob::PFParticle
@@ -87,6 +88,7 @@ namespace lar_pandora {
   LArPandoraTrackCreation::LArPandoraTrackCreation(fhicl::ParameterSet const& pset)
     : EDProducer{pset}
     , m_pfParticleLabel(pset.get<std::string>("PFParticleLabel"))
+    , m_pfParticleInstance(pset.get<std::string>("PFParticleInstance", ""))
     , m_minTrajectoryPoints(pset.get<unsigned int>("MinTrajectoryPoints", 2))
     , m_slidingFitHalfWindow(pset.get<unsigned int>("SlidingFitHalfWindow", 20))
     , m_useAllParticles(pset.get<bool>("UseAllParticles", false))
@@ -121,17 +123,18 @@ namespace lar_pandora {
     const art::PtrMaker<recob::Track> makeTrackPtr(evt);
 
     // Organise inputs
+    const art::InputTag pfpTag(m_pfParticleLabel, m_pfParticleInstance);
     PFParticleVector pfParticleVector, extraPfParticleVector;
     PFParticlesToSpacePoints pfParticlesToSpacePoints;
     PFParticlesToClusters pfParticlesToClusters;
     LArPandoraHelper::CollectPFParticles(
-      evt, m_pfParticleLabel, pfParticleVector, pfParticlesToSpacePoints);
+      evt, pfpTag, pfParticleVector, pfParticlesToSpacePoints);
     LArPandoraHelper::CollectPFParticles(
-      evt, m_pfParticleLabel, extraPfParticleVector, pfParticlesToClusters);
+      evt, pfpTag, extraPfParticleVector, pfParticlesToClusters);
 
     VertexVector vertexVector;
     PFParticlesToVertices pfParticlesToVertices;
-    LArPandoraHelper::CollectVertices(evt, m_pfParticleLabel, vertexVector, pfParticlesToVertices);
+    LArPandoraHelper::CollectVertices(evt, pfpTag, vertexVector, pfParticlesToVertices);
 
     for (const art::Ptr<recob::PFParticle> pPFParticle : pfParticleVector) {
       // Select track-like pfparticles
@@ -201,12 +204,12 @@ namespace lar_pandora {
       HitSet hitsInParticleSet;
 
       LArPandoraHelper::GetAssociatedHits(evt,
-                                          m_pfParticleLabel,
+                                          pfpTag,
                                           particleToSpacePointIter->second,
                                           hitsFromSpacePoints,
                                           &indexVector);
       LArPandoraHelper::GetAssociatedHits(
-        evt, m_pfParticleLabel, particleToClustersIter->second, hitsFromClusters);
+        evt, pfpTag, particleToClustersIter->second, hitsFromClusters);
       //ATTN: hits ordered from space points if available, rest added at the end
       for (unsigned int hitIndex = 0; hitIndex < hitsFromSpacePoints.size(); hitIndex++) {
         hitsInParticle.push_back(hitsFromSpacePoints.at(hitIndex));

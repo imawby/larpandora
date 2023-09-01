@@ -12,6 +12,7 @@ namespace art {
 }
 
 #include "canvas/Persistency/Common/Ptr.h"
+#include "canvas/Utilities/InputTag.h"
 
 #include <map>
 #include <set>
@@ -153,23 +154,23 @@ namespace lar_pandora {
      *  @brief Collect the reconstructed PFParticles from the ART event record
      *
      *  @param evt the ART event record
-     *  @param label the label for the PFParticle list in the event
+     *  @param inputTag the tag for the PFParticle list in the event
      *  @param particleVector the output vector of PFParticle objects
      */
     static void CollectPFParticles(const art::Event& evt,
-                                   const std::string& label,
+                                   const art::InputTag &inputTag,
                                    PFParticleVector& particleVector);
 
     /**
      *  @brief Collect the reconstructed SpacePoints and associated hits from the ART event record
      *
      *  @param evt the ART event record
-     *  @param label the label for the SpacePoint list in the event
+     *  @param inputTag the tag for the SpacePoint list in the event
      *  @param spacePointVector the output vector of SpacePoint objects
      *  @param spacePointsToHits the output map from SpacePoint to Hit objects
      */
     static void CollectSpacePoints(const art::Event& evt,
-                                   const std::string& label,
+                                   const art::InputTag &inputTag,
                                    SpacePointVector& spacePointVector,
                                    SpacePointsToHits& spacePointsToHits);
 
@@ -177,13 +178,13 @@ namespace lar_pandora {
      *  @brief Collect the reconstructed SpacePoints and associated hits from the ART event record
      *
      *  @param evt the ART event record
-     *  @param label the label for the SpacePoint list in the event
+     *  @param inputTag the tag for the SpacePoint list in the event
      *  @param spacePointVector the output vector of SpacePoint objects
      *  @param spacePointsToHits the output map from SpacePoint to Hit objects
      *  @param hitsToSpacePoints the output map from Hit to SpacePoint objects
      */
     static void CollectSpacePoints(const art::Event& evt,
-                                   const std::string& label,
+                                   const art::InputTag &inputTag,
                                    SpacePointVector& spacePointVector,
                                    SpacePointsToHits& spacePointsToHits,
                                    HitsToSpacePoints& hitsToSpacePoints);
@@ -192,12 +193,12 @@ namespace lar_pandora {
      *  @brief Collect the reconstructed Clusters and associated hits from the ART event record
      *
      *  @param evt the ART event record
-     *  @param label the label for the SpacePoint list in the event
+     *  @param inputTag the tag for the SpacePoint list in the event
      *  @param clusterVector the output vector of Cluster objects
      *  @param clustersToHits the output map from Cluster to Hit objects
      */
     static void CollectClusters(const art::Event& evt,
-                                const std::string& label,
+                                const art::InputTag &inputTag,
                                 ClusterVector& clusterVector,
                                 ClustersToHits& clustersToHits);
 
@@ -205,12 +206,12 @@ namespace lar_pandora {
      *  @brief Collect the reconstructed PFParticles and associated SpacePoints from the ART event record
      *
      *  @param evt the ART event record
-     *  @param label the label for the PFParticle list in the event
+     *  @param inputTag the tag for the PFParticle list in the event
      *  @param particleVector the output vector of PFParticle objects
      *  @param particlesToSpacePoints the output map from PFParticle to SpacePoint objects
      */
     static void CollectPFParticles(const art::Event& evt,
-                                   const std::string& label,
+                                   const art::InputTag &inputTag,
                                    PFParticleVector& particleVector,
                                    PFParticlesToSpacePoints& particlesToSpacePoints);
 
@@ -218,12 +219,12 @@ namespace lar_pandora {
      *  @brief Collect the reconstructed PFParticles and associated Clusters from the ART event record
      *
      *  @param evt the ART event record
-     *  @param label the label for the PFParticle list in the event
+     *  @param inputTag the tag for the PFParticle list in the event
      *  @param particleVector the output vector of PFParticle objects
      *  @param particlesToClusters the output map from PFParticle to Cluster objects
      */
     static void CollectPFParticles(const art::Event& evt,
-                                   const std::string& label,
+                                   const art::InputTag &inputTag,
                                    PFParticleVector& particleVector,
                                    PFParticlesToClusters& particlesToClusters);
 
@@ -231,12 +232,12 @@ namespace lar_pandora {
      *  @brief Collect the reconstructed PFParticle Metadata from the ART event record
      *
      *  @param evt the ART event record
-     *  @param label the label for the PFParticle list in the event
+     *  @param inputTag the tag for the PFParticle list in the event
      *  @param particleVector the output vector of PFParticle objects
      *  @param particlesToSpacePoints the output map from PFParticle to PFParticleMetadata objects
      */
     static void CollectPFParticleMetadata(const art::Event& evt,
-                                          const std::string& label,
+                                          const art::InputTag &inputTag,
                                           PFParticleVector& particleVector,
                                           PFParticlesToMetadata& particlesToMetadata);
 
@@ -322,12 +323,12 @@ namespace lar_pandora {
      *  @brief Collect the reconstructed PFParticles and associated Vertices from the ART event record
      *
      *  @param evt the ART event record
-     *  @param label the label for the PFParticle list in the event
+     *  @param inputTag the tag for the PFParticle list in the event
      *  @param vertexVector the output vector of Vertex objects
      *  @param particlesToVertices the output map from PFParticle to Vertex objects
      */
     static void CollectVertices(const art::Event& evt,
-                                const std::string& label,
+                                const art::InputTag &inputTag,
                                 VertexVector& vertexVector,
                                 PFParticlesToVertices& particlesToVertices);
 
@@ -369,16 +370,16 @@ namespace lar_pandora {
      *  @brief Build mapping between PFParticles and Hits starting from ART event record
      *
      *  @param evt the ART event record
-     *  @param label_pfpart the label for the PFParticle list in the event
-     *  @param label_space the label for the Intermediate list in the event
+     *  @param inputTag_pfpart the label for the PFParticle list in the event
+     *  @param inputTag_middle the label for the Intermediate list in the event
      *  @param particlesToHits output map from PFParticle to Hit objects
      *  @param hitsToParticles output map from Hit to PFParticle objects
      *  @param daughterMode treatment of daughter particles in construction of maps
      *  @param useClusters choice of intermediate object (true for Clusters, false for SpacePoints)
      */
     static void BuildPFParticleHitMaps(const art::Event& evt,
-                                       const std::string& label_pfpart,
-                                       const std::string& label_mid,
+                                       const art::InputTag &inputTag_pfpart,
+                                       const art::InputTag &inputTag_middle,
                                        PFParticlesToHits& particlesToHits,
                                        HitsToPFParticles& hitsToParticles,
                                        const DaughterMode daughterMode = kUseDaughters,
@@ -388,14 +389,14 @@ namespace lar_pandora {
      *  @brief Build mapping between PFParticles and Hits starting from ART event record
      *
      *  @param evt the ART event record
-     *  @param label the label for the PFParticle list in the event
+     *  @param inputTag the tag for the PFParticle list in the event
      *  @param particlesToHits output map from PFParticle to Hit objects
      *  @param hitsToParticles output map from Hit to PFParticle objects
      *  @param daughterMode treatment of daughter particles in construction of maps
      *  @param useClusters choice of intermediate object (true for Clusters, false for SpacePoints)
      */
     static void BuildPFParticleHitMaps(const art::Event& evt,
-                                       const std::string& label,
+                                       const art::InputTag &inputTag,
                                        PFParticlesToHits& particlesToHits,
                                        HitsToPFParticles& hitsToParticles,
                                        const DaughterMode daughterMode = kUseDaughters,
@@ -557,14 +558,14 @@ namespace lar_pandora {
      *  @brief  Get all hits associated with input clusters
      *
      *  @param  evt the event containing the hits
-     *  @param  label the label of the collection producing PFParticles
+     *  @param  inputTag the tag of the collection producing PFParticles
      *  @param  input vector input of T (clusters, spacepoints)
      *  @param  associatedHits output hits associated with T
      *  @param  indexVector vector of spacepoint indices reflecting trajectory points sorting order
      */
     template <typename T>
     static void GetAssociatedHits(const art::Event& evt,
-                                  const std::string& label,
+                                  const art::InputTag& inputTag,
                                   const std::vector<art::Ptr<T>>& inputVector,
                                   HitVector& associatedHits,
                                   const pandora::IntVector* const indexVector = nullptr);

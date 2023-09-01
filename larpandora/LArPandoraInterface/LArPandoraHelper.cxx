@@ -12,6 +12,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "canvas/Persistency/Common/FindOneP.h"
+#include "canvas/Utilities/InputTag.h"
 #include "cetlib_except/exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -68,7 +69,7 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void LArPandoraHelper::CollectHits(const art::Event& evt,
-                                     const std::string& label,
+                                     const std::string &label,
                                      HitVector& hitVector)
   {
     art::Handle<std::vector<recob::Hit>> theHits;
@@ -91,11 +92,11 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void LArPandoraHelper::CollectPFParticles(const art::Event& evt,
-                                            const std::string& label,
+                                            const art::InputTag &inputTag,
                                             PFParticleVector& particleVector)
   {
     art::Handle<std::vector<recob::PFParticle>> theParticles;
-    evt.getByLabel(label, theParticles);
+    evt.getByLabel(inputTag, theParticles);
 
     if (!theParticles.isValid()) {
       mf::LogDebug("LArPandora") << "  Failed to find particles... " << std::endl;
@@ -115,25 +116,25 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void LArPandoraHelper::CollectSpacePoints(const art::Event& evt,
-                                            const std::string& label,
+                                            const art::InputTag &inputTag,
                                             SpacePointVector& spacePointVector,
                                             SpacePointsToHits& spacePointsToHits)
   {
     HitsToSpacePoints hitsToSpacePoints;
     return LArPandoraHelper::CollectSpacePoints(
-      evt, label, spacePointVector, spacePointsToHits, hitsToSpacePoints);
+      evt, inputTag, spacePointVector, spacePointsToHits, hitsToSpacePoints);
   }
 
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void LArPandoraHelper::CollectSpacePoints(const art::Event& evt,
-                                            const std::string& label,
+                                            const art::InputTag &inputTag,
                                             SpacePointVector& spacePointVector,
                                             SpacePointsToHits& spacePointsToHits,
                                             HitsToSpacePoints& hitsToSpacePoints)
   {
     art::Handle<std::vector<recob::SpacePoint>> theSpacePoints;
-    evt.getByLabel(label, theSpacePoints);
+    evt.getByLabel(inputTag, theSpacePoints);
 
     if (!theSpacePoints.isValid()) {
       mf::LogDebug("LArPandora") << "  Failed to find spacepoints... " << std::endl;
@@ -144,7 +145,7 @@ namespace lar_pandora {
                                  << std::endl;
     }
 
-    art::FindOneP<recob::Hit> theHitAssns(theSpacePoints, evt, label);
+    art::FindOneP<recob::Hit> theHitAssns(theSpacePoints, evt, inputTag);
     for (unsigned int i = 0; i < theSpacePoints->size(); ++i) {
       const art::Ptr<recob::SpacePoint> spacepoint(theSpacePoints, i);
       spacePointVector.push_back(spacepoint);
@@ -157,12 +158,12 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void LArPandoraHelper::CollectClusters(const art::Event& evt,
-                                         const std::string& label,
+                                         const art::InputTag &inputTag,
                                          ClusterVector& clusterVector,
                                          ClustersToHits& clustersToHits)
   {
     art::Handle<std::vector<recob::Cluster>> theClusters;
-    evt.getByLabel(label, theClusters);
+    evt.getByLabel(inputTag, theClusters);
 
     if (!theClusters.isValid()) {
       mf::LogDebug("LArPandora") << "  Failed to find clusters... " << std::endl;
@@ -172,7 +173,7 @@ namespace lar_pandora {
       mf::LogDebug("LArPandora") << "  Found: " << theClusters->size() << " Clusters " << std::endl;
     }
 
-    art::FindManyP<recob::Hit> theHitAssns(theClusters, evt, label);
+    art::FindManyP<recob::Hit> theHitAssns(theClusters, evt, inputTag);
     for (unsigned int i = 0; i < theClusters->size(); ++i) {
       const art::Ptr<recob::Cluster> cluster(theClusters, i);
       clusterVector.push_back(cluster);
@@ -188,12 +189,12 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void LArPandoraHelper::CollectPFParticles(const art::Event& evt,
-                                            const std::string& label,
+                                            const art::InputTag &inputTag,
                                             PFParticleVector& particleVector,
                                             PFParticlesToSpacePoints& particlesToSpacePoints)
   {
     art::Handle<std::vector<recob::PFParticle>> theParticles;
-    evt.getByLabel(label, theParticles);
+    evt.getByLabel(inputTag, theParticles);
 
     if (!theParticles.isValid()) {
       mf::LogDebug("LArPandora") << "  Failed to find particles... " << std::endl;
@@ -204,7 +205,7 @@ namespace lar_pandora {
                                  << std::endl;
     }
 
-    art::FindManyP<recob::SpacePoint> theSpacePointAssns(theParticles, evt, label);
+    art::FindManyP<recob::SpacePoint> theSpacePointAssns(theParticles, evt, inputTag);
     for (unsigned int i = 0; i < theParticles->size(); ++i) {
       const art::Ptr<recob::PFParticle> particle(theParticles, i);
       particleVector.push_back(particle);
@@ -220,12 +221,12 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void LArPandoraHelper::CollectPFParticles(const art::Event& evt,
-                                            const std::string& label,
+                                            const art::InputTag &inputTag,
                                             PFParticleVector& particleVector,
                                             PFParticlesToClusters& particlesToClusters)
   {
     art::Handle<std::vector<recob::PFParticle>> theParticles;
-    evt.getByLabel(label, theParticles);
+    evt.getByLabel(inputTag, theParticles);
 
     if (!theParticles.isValid()) {
       mf::LogDebug("LArPandora") << "  Failed to find particles... " << std::endl;
@@ -236,7 +237,7 @@ namespace lar_pandora {
                                  << std::endl;
     }
 
-    art::FindManyP<recob::Cluster> theClusterAssns(theParticles, evt, label);
+    art::FindManyP<recob::Cluster> theClusterAssns(theParticles, evt, inputTag);
     for (unsigned int i = 0; i < theParticles->size(); ++i) {
       const art::Ptr<recob::PFParticle> particle(theParticles, i);
       particleVector.push_back(particle);
@@ -252,12 +253,12 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void LArPandoraHelper::CollectPFParticleMetadata(const art::Event& evt,
-                                                   const std::string& label,
+                                                   const art::InputTag &inputTag,
                                                    PFParticleVector& particleVector,
                                                    PFParticlesToMetadata& particlesToMetadata)
   {
     art::Handle<std::vector<recob::PFParticle>> theParticles;
-    evt.getByLabel(label, theParticles);
+    evt.getByLabel(inputTag, theParticles);
 
     if (!theParticles.isValid()) {
       mf::LogDebug("LArPandora") << "  Failed to find particles... " << std::endl;
@@ -268,7 +269,7 @@ namespace lar_pandora {
                                  << std::endl;
     }
 
-    art::FindManyP<larpandoraobj::PFParticleMetadata> theMetadataAssns(theParticles, evt, label);
+    art::FindManyP<larpandoraobj::PFParticleMetadata> theMetadataAssns(theParticles, evt, inputTag);
     for (unsigned int i = 0; i < theParticles->size(); ++i) {
       const art::Ptr<recob::PFParticle> particle(theParticles, i);
       particleVector.push_back(particle);
@@ -474,12 +475,12 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void LArPandoraHelper::CollectVertices(const art::Event& evt,
-                                         const std::string& label,
+                                         const art::InputTag &inputTag,
                                          VertexVector& vertexVector,
                                          PFParticlesToVertices& particlesToVertices)
   {
     art::Handle<std::vector<recob::Vertex>> theVertices;
-    evt.getByLabel(label, theVertices);
+    evt.getByLabel(inputTag, theVertices);
 
     if (!theVertices.isValid()) {
       mf::LogDebug("LArPandora") << "  Failed to find vertices... " << std::endl;
@@ -489,7 +490,7 @@ namespace lar_pandora {
       mf::LogDebug("LArPandora") << "  Found: " << theVertices->size() << " Vertices " << std::endl;
     }
 
-    art::FindManyP<recob::PFParticle> theVerticesAssns(theVertices, evt, label);
+    art::FindManyP<recob::PFParticle> theVerticesAssns(theVertices, evt, inputTag);
     for (unsigned int i = 0; i < theVertices->size(); ++i) {
       const art::Ptr<recob::Vertex> vertex(theVertices, i);
       vertexVector.push_back(vertex);
@@ -622,21 +623,21 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void LArPandoraHelper::BuildPFParticleHitMaps(const art::Event& evt,
-                                                const std::string& label,
+                                                const art::InputTag &inputTag,
                                                 PFParticlesToHits& particlesToHits,
                                                 HitsToPFParticles& hitsToParticles,
                                                 const DaughterMode daughterMode,
                                                 const bool useClusters)
   {
     return LArPandoraHelper::BuildPFParticleHitMaps(
-      evt, label, label, particlesToHits, hitsToParticles, daughterMode, useClusters);
+      evt, inputTag, inputTag, particlesToHits, hitsToParticles, daughterMode, useClusters);
   }
 
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void LArPandoraHelper::BuildPFParticleHitMaps(const art::Event& evt,
-                                                const std::string& label_pfpart,
-                                                const std::string& label_middle,
+                                                const art::InputTag &inputTag_pfpart,
+                                                const art::InputTag &inputTag_middle,
                                                 PFParticlesToHits& particlesToHits,
                                                 HitsToPFParticles& hitsToParticles,
                                                 const DaughterMode daughterMode,
@@ -650,8 +651,8 @@ namespace lar_pandora {
       ClusterVector clusterVector;
       ClustersToHits clustersToHits;
 
-      LArPandoraHelper::CollectPFParticles(evt, label_pfpart, particleVector, particlesToClusters);
-      LArPandoraHelper::CollectClusters(evt, label_middle, clusterVector, clustersToHits);
+      LArPandoraHelper::CollectPFParticles(evt, inputTag_pfpart, particleVector, particlesToClusters);
+      LArPandoraHelper::CollectClusters(evt, inputTag_middle, clusterVector, clustersToHits);
 
       LArPandoraHelper::BuildPFParticleHitMaps(particleVector,
                                                particlesToClusters,
@@ -670,8 +671,8 @@ namespace lar_pandora {
       SpacePointsToHits spacePointsToHits;
 
       LArPandoraHelper::CollectPFParticles(
-        evt, label_pfpart, particleVector, particlesToSpacePoints);
-      LArPandoraHelper::CollectSpacePoints(evt, label_middle, spacePointVector, spacePointsToHits);
+        evt, inputTag_pfpart, particleVector, particlesToSpacePoints);
+      LArPandoraHelper::CollectSpacePoints(evt, inputTag_middle, spacePointVector, spacePointsToHits);
 
       LArPandoraHelper::BuildPFParticleHitMaps(particleVector,
                                                particlesToSpacePoints,
@@ -1115,15 +1116,15 @@ namespace lar_pandora {
 
   template <typename T>
   void LArPandoraHelper::GetAssociatedHits(const art::Event& evt,
-                                           const std::string& label,
+                                           const art::InputTag& inputTag,
                                            const std::vector<art::Ptr<T>>& inputVector,
                                            HitVector& associatedHits,
                                            const pandora::IntVector* const indexVector)
   {
 
     art::Handle<std::vector<T>> handle;
-    evt.getByLabel(label, handle);
-    art::FindManyP<recob::Hit> hitAssoc(handle, evt, label);
+    evt.getByLabel(inputTag, handle);
+    art::FindManyP<recob::Hit> hitAssoc(handle, evt, inputTag);
 
     if (indexVector != nullptr) {
       if (inputVector.size() != indexVector->size())
@@ -1463,13 +1464,13 @@ namespace lar_pandora {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   template void LArPandoraHelper::GetAssociatedHits(const art::Event&,
-                                                    const std::string&,
+                                                    const art::InputTag&,
                                                     const std::vector<art::Ptr<recob::Cluster>>&,
                                                     HitVector&,
                                                     const pandora::IntVector* const);
 
   template void LArPandoraHelper::GetAssociatedHits(const art::Event&,
-                                                    const std::string&,
+                                                    const art::InputTag&,
                                                     const std::vector<art::Ptr<recob::SpacePoint>>&,
                                                     HitVector&,
                                                     const pandora::IntVector* const);

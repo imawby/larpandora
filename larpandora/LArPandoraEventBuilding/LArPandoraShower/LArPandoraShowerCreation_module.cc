@@ -51,8 +51,9 @@ namespace lar_pandora {
      */
     recob::PCAxis BuildPCAxis(const lar_content::LArShowerPCA& larShowerPCA) const;
 
-    std::string m_pfParticleLabel; ///< The pf particle label
-    bool m_useAllParticles;        ///< Build a recob::Track for every recob::PFParticle
+    std::string m_pfParticleLabel;    ///< The pf particle module label
+    std::string m_pfParticleInstance; ///< The pf particle module instance label
+    bool m_useAllParticles;           ///< Build a recob::Track for every recob::PFParticle
   };
 
   DEFINE_ART_MODULE(LArPandoraShowerCreation)
@@ -93,6 +94,7 @@ namespace lar_pandora {
   LArPandoraShowerCreation::LArPandoraShowerCreation(fhicl::ParameterSet const& pset)
     : EDProducer{pset}
     , m_pfParticleLabel(pset.get<std::string>("PFParticleLabel"))
+    , m_pfParticleInstance(pset.get<std::string>("PFParticleInstance"))
     , m_useAllParticles(pset.get<bool>("UseAllParticles", false))
   {
     produces<std::vector<recob::Shower>>();
@@ -124,17 +126,18 @@ namespace lar_pandora {
     int showerCounter(0);
 
     // Organise inputs
+    const art::InputTag pfpTag(m_pfParticleLabel, m_pfParticleInstance);
     PFParticleVector pfParticleVector, extraPfParticleVector;
     PFParticlesToSpacePoints pfParticlesToSpacePoints;
     PFParticlesToClusters pfParticlesToClusters;
     LArPandoraHelper::CollectPFParticles(
-      evt, m_pfParticleLabel, pfParticleVector, pfParticlesToSpacePoints);
+      evt, pfpTag, pfParticleVector, pfParticlesToSpacePoints);
     LArPandoraHelper::CollectPFParticles(
-      evt, m_pfParticleLabel, extraPfParticleVector, pfParticlesToClusters);
+      evt, pfpTag, extraPfParticleVector, pfParticlesToClusters);
 
     VertexVector vertexVector;
     PFParticlesToVertices pfParticlesToVertices;
-    LArPandoraHelper::CollectVertices(evt, m_pfParticleLabel, vertexVector, pfParticlesToVertices);
+    LArPandoraHelper::CollectVertices(evt, pfpTag, vertexVector, pfParticlesToVertices);
 
     for (const art::Ptr<recob::PFParticle> pPFParticle : pfParticleVector) {
       // Select shower-like pfparticles
@@ -223,7 +226,7 @@ namespace lar_pandora {
 
       HitVector hitsInParticle;
       LArPandoraHelper::GetAssociatedHits(
-        evt, m_pfParticleLabel, particleToClustersIter->second, hitsInParticle);
+        evt, pfpTag, particleToClustersIter->second, hitsInParticle);
 
       // Output associations, after output objects are in place
       util::CreateAssn(evt, pShower, pPFParticle, *(outputParticlesToShowers.get()));
