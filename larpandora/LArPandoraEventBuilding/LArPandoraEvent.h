@@ -186,6 +186,8 @@ public:
      */
     void WriteToEvent() const;
 
+    void AddNuSliceID(const bool isFallback);
+
 private:
     /**
      *  @brief  Get the collections and associations from m_pEvent with the required labels
