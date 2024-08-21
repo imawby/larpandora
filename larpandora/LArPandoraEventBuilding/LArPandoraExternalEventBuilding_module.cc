@@ -362,9 +362,41 @@ void LArPandoraExternalEventBuilding::CollectConsolidatedParticles(const PFParti
     PFParticleVector collectedParticles;
     collectedParticles.insert(collectedParticles.end(), clearCosmics.begin(), clearCosmics.end());
 
-    for (const auto &slice : slices)
+    // Determine whether the nuSliceID tool has found a neutrino
+    // At the same time, find the slice with the highest 'toplogical' score
+    bool haveNuSlice(false);
+    int highestNuScoreSliceIndex(-1);
+    float highestNuScore(0.f); // Topological score is between 0 and +1
+   
+    for (unsigned int i = 0; i < slices.size(); ++i)
     {
-        const PFParticleVector &particles(slice.IsTaggedAsTarget() ? slice.GetTargetHypothesis() : slice.GetCosmicRayHypothesis());
+        const Slice &slice = slices.at(i);
+
+        if ((!haveNuSlice) && slice.IsTaggedAsTarget())
+            haveNuSlice = true;
+
+        const float nuScore(slice.GetTopologicalScore());
+        std::cout << "nuScore: " << nuScore << std::endl;
+
+        if (nuScore > highestNuScore)
+        {
+            highestNuScore = nuScore;
+            highestNuScoreSliceIndex = i;
+        }
+    }
+
+    std::cout << "highestNuScoreSliceIndex: " << highestNuScoreSliceIndex << std::endl;
+
+    // Collect nu reco output from nu slice, and CR output from all others
+    for (unsigned int i = 0; i < slices.size(); ++i)
+    {
+        const Slice &slice = slices.at(i);
+        const bool isTaggedAsTarget = haveNuSlice ? slice.IsTaggedAsTarget() : ((highestNuScoreSliceIndex != -1) && (int(i) == highestNuScoreSliceIndex));
+
+        if (isTaggedAsTarget)
+            std::cout << "target slice index: " << i << std::endl;
+
+        const PFParticleVector &particles(isTaggedAsTarget ? slice.GetTargetHypothesis() : slice.GetCosmicRayHypothesis());
         collectedParticles.insert(collectedParticles.end(), particles.begin(), particles.end());
     }
 
