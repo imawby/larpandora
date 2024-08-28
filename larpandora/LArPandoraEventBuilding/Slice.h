@@ -26,7 +26,9 @@ public:
      *  @param  crHypothesis the slice as reconstructed under the cosmic-ray hypothesis
      *  @param  isTarget if the slice has been identified as a target
      */
-    Slice(const float topologicalScore, const PFParticleVector &targetHypothesis, const PFParticleVector &crHypothesis, const bool isTarget = false);
+    Slice(const int ID, const float topologicalScore, const PFParticleVector &targetHypothesis, const PFParticleVector &crHypothesis, const bool isTarget = false);
+
+    int GetID() const;
 
     /**
      *  @brief Get the topological score for the slice - closer to 1 means more likely to be the target slice
@@ -59,6 +61,7 @@ public:
     void TagAsCosmic();
 
 private:
+    int              m_ID;
     float            m_topologicalScore; ///< The topological neutrino / beam particle score from Pandora
     PFParticleVector m_targetHypothesis; ///< The slice as reconstructed under the neutrino / beam particle hypothesis
     PFParticleVector m_crHypothesis;     ///< The slice as reconstructed under the cosmic-ray hypothesis
@@ -69,12 +72,20 @@ typedef std::vector<Slice> SliceVector;
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline Slice::Slice(const float topologicalScore, const PFParticleVector &targetHypothesis, const PFParticleVector &crHypothesis, const bool isTarget) : 
+inline Slice::Slice(const int ID, const float topologicalScore, const PFParticleVector &targetHypothesis, const PFParticleVector &crHypothesis, const bool isTarget) :
+    m_ID(ID), 
     m_topologicalScore(topologicalScore),
     m_targetHypothesis(targetHypothesis),
     m_crHypothesis(crHypothesis),
     m_isTarget(isTarget)
 {
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline int Slice::GetID() const
+{
+    return m_ID;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------

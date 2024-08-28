@@ -105,21 +105,6 @@ void LArPandoraEvent::WriteToEvent() const
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-    void LArPandoraEvent::AddNuSliceID(const bool /*isFallback*/)
-{
-    for (const art::Ptr<recob::PFParticle> &pfp : m_pfParticles)
-    {
-        if (m_pfParticleMetadataMap.find(pfp) == m_pfParticleMetadataMap.end())
-            return;
-
-        art::Ptr<larpandoraobj::PFParticleMetadata> &metadata = m_pfParticleMetadataMap.at(pfp).at(0).first;
-
-        std::cout << &metadata << std::endl;
-    }
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
 void LArPandoraEvent::GetCollections()
 {
     this->GetCollection(Labels::PFParticleLabel, m_pfParticles);

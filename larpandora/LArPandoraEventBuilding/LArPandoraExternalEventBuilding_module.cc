@@ -21,6 +21,7 @@
 #include "larpandora/LArPandoraEventBuilding/Slice.h"
 #include "larpandora/LArPandoraEventBuilding/SliceIdBaseTool.h"
 #include "larpandora/LArPandoraEventBuilding/LArPandoraEvent.h"
+#include "larpandora/LArPandoraEventBuilding/NuSliceIDData/NuSliceID.h"
 
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
@@ -82,6 +83,8 @@ private:
      */
     void CollectSlices(const PFParticleVector &allParticles, const PFParticleToMetadata &particlesToMetadata, const PFParticleMap &particleMap, SliceVector &slices) const;
 
+    void SetNuSliceIDs(const SliceVector &slices);
+
     /**
      *  @brief  Get the consolidated collection of particles based on the slice ids
      *
@@ -121,6 +124,8 @@ private:
     bool                                m_useTestBeamMode;         ///< If we should expect a test-beam (instead of a neutrino) slice
     std::string                         m_targetKey;               ///< The metadata key for a PFParticle to determine if it is the target
     std::string                         m_scoreKey;                ///< The metadata key for the score of the target slice from Pandora
+    int                                 m_pandoraNuSliceID;
+    int                                 m_flashMatchNuSliceID;
 };
 
 DEFINE_ART_MODULE(LArPandoraExternalEventBuilding)
@@ -145,7 +150,9 @@ LArPandoraExternalEventBuilding::LArPandoraExternalEventBuilding(fhicl::Paramete
     m_sliceIdTool(art::make_tool<SliceIdBaseTool>(pset.get<fhicl::ParameterSet>("SliceIdTool"))),
     m_useTestBeamMode(pset.get<bool>("ShouldUseTestBeamMode", false)),
     m_targetKey(m_useTestBeamMode ? "IsTestBeam" : "IsNeutrino"),
-    m_scoreKey(m_useTestBeamMode ? "TestBeamScore" : "NuScore")
+    m_scoreKey(m_useTestBeamMode ? "TestBeamScore" : "NuScore"),
+    m_pandoraNuSliceID(-1),
+    m_flashMatchNuSliceID(-1)
 {
     produces< std::vector<recob::PFParticle> >();
     produces< std::vector<recob::SpacePoint> >();
@@ -156,6 +163,7 @@ LArPandoraExternalEventBuilding::LArPandoraExternalEventBuilding(fhicl::Paramete
     produces< std::vector<recob::Shower> >();
     produces< std::vector<recob::PCAxis> >();
     produces< std::vector<larpandoraobj::PFParticleMetadata> >();
+    produces< std::vector<larpandora::NuSliceID> >();
 
     produces< art::Assns<recob::PFParticle, recob::SpacePoint> >();
     produces< art::Assns<recob::PFParticle, recob::Cluster> >();
@@ -183,6 +191,9 @@ LArPandoraExternalEventBuilding::LArPandoraExternalEventBuilding(fhicl::Paramete
 
 void LArPandoraExternalEventBuilding::produce(art::Event &evt)
 {
+    m_pandoraNuSliceID = -1;
+    m_flashMatchNuSliceID = -1;
+
     PFParticleVector particles;
     PFParticleToMetadata particlesToMetadata;
     this->CollectPFParticles(evt, particlesToMetadata, particles);
@@ -198,6 +209,8 @@ void LArPandoraExternalEventBuilding::produce(art::Event &evt)
 
     m_sliceIdTool->ClassifySlices(slices, evt);
 
+    this->SetNuSliceIDs(slices);
+
     PFParticleVector consolidatedParticles;
     this->CollectConsolidatedParticles(particles, clearCosmics, slices, consolidatedParticles);
 
@@ -205,6 +218,12 @@ void LArPandoraExternalEventBuilding::produce(art::Event &evt)
     const LArPandoraEvent consolidatedEvent(LArPandoraEvent(this, &evt, labels, m_shouldProduceT0s), consolidatedParticles);
 
     consolidatedEvent.WriteToEvent();
+
+    // Finally write the NuSliceIDs to the event
+    std::unique_ptr<std::vector<larpandora::NuSliceID>> nuSliceIDs = std::make_unique<std::vector<larpandora::NuSliceID>>();
+    larpandora::NuSliceID nuSliceID(m_pandoraNuSliceID, m_flashMatchNuSliceID);
+    nuSliceIDs->push_back(nuSliceID);
+    evt.put(std::move(nuSliceIDs));
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -338,7 +357,7 @@ void LArPandoraExternalEventBuilding::CollectSlices(const PFParticleVector &allP
         // Get the cosmic hypothesis
         const auto crHypothesisIter(crHypotheses.find(sliceId));
         crPFParticleVector = ((crHypothesisIter == crHypotheses.end()) ? emptyPFParticleVector : crHypothesisIter->second);
-        slices.emplace_back(targetScoresIter->second, targetPFParticleVector, crPFParticleVector);
+        slices.emplace_back(sliceId, targetScoresIter->second, targetPFParticleVector, crPFParticleVector);
     }
 }
 
@@ -362,39 +381,10 @@ void LArPandoraExternalEventBuilding::CollectConsolidatedParticles(const PFParti
     PFParticleVector collectedParticles;
     collectedParticles.insert(collectedParticles.end(), clearCosmics.begin(), clearCosmics.end());
 
-    // Determine whether the nuSliceID tool has found a neutrino
-    // At the same time, find the slice with the highest 'toplogical' score
-    bool haveNuSlice(false);
-    int highestNuScoreSliceIndex(-1);
-    float highestNuScore(0.f); // Topological score is between 0 and +1
-   
-    for (unsigned int i = 0; i < slices.size(); ++i)
-    {
-        const Slice &slice = slices.at(i);
-
-        if ((!haveNuSlice) && slice.IsTaggedAsTarget())
-            haveNuSlice = true;
-
-        const float nuScore(slice.GetTopologicalScore());
-        std::cout << "nuScore: " << nuScore << std::endl;
-
-        if (nuScore > highestNuScore)
-        {
-            highestNuScore = nuScore;
-            highestNuScoreSliceIndex = i;
-        }
-    }
-
-    std::cout << "highestNuScoreSliceIndex: " << highestNuScoreSliceIndex << std::endl;
-
     // Collect nu reco output from nu slice, and CR output from all others
-    for (unsigned int i = 0; i < slices.size(); ++i)
+    for (const Slice &slice : slices)
     {
-        const Slice &slice = slices.at(i);
-        const bool isTaggedAsTarget = haveNuSlice ? slice.IsTaggedAsTarget() : ((highestNuScoreSliceIndex != -1) && (int(i) == highestNuScoreSliceIndex));
-
-        if (isTaggedAsTarget)
-            std::cout << "target slice index: " << i << std::endl;
+        const bool isTaggedAsTarget = (m_flashMatchNuSliceID >= 0) ? (slice.GetID() == m_flashMatchNuSliceID) : (slice.GetID() == m_pandoraNuSliceID);
 
         const PFParticleVector &particles(isTaggedAsTarget ? slice.GetTargetHypothesis() : slice.GetCosmicRayHypothesis());
         collectedParticles.insert(collectedParticles.end(), particles.begin(), particles.end());
@@ -406,6 +396,32 @@ void LArPandoraExternalEventBuilding::CollectConsolidatedParticles(const PFParti
     {
         if (std::find(collectedParticles.begin(), collectedParticles.end(), part) != collectedParticles.end())
             consolidatedParticles.push_back(part);
+    }
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void LArPandoraExternalEventBuilding::SetNuSliceIDs(const SliceVector &slices)
+{
+    // Determine Pandora nu slice ID
+    float highestNuScore(0.f); // Topological score is between 0 and +1
+   
+    for (const Slice &slice : slices)
+    {
+        const float nuScore(slice.GetTopologicalScore());
+
+        if (nuScore > highestNuScore)
+        {
+            highestNuScore = nuScore;
+            m_pandoraNuSliceID = slice.GetID();
+        }
+    }
+
+    // Determine flash match nu slice ID
+    for (const Slice &slice : slices)
+    {
+        if (slice.IsTaggedAsTarget())
+            m_flashMatchNuSliceID = slice.GetID();
     }
 }
 

@@ -1,0 +1,11 @@
+<lcgdict>
+  <class name="larpandora::NuSliceID" ClassVersion="11" >
+   <version ClassVersion="11" checksum="1883273138"/>
+   <version ClassVersion="10" checksum="424562693"/>
+  </class>
+
+  <class name="art::Ptr<larpandora::NuSliceID>" />
+  <class name="std::vector<larpandora::NuSliceID>" />
+  <class name="art::Wrapper<larpandora::NuSliceID>" />  
+  <class name="art::Wrapper<std::vector<larpandora::NuSliceID>>" /> 
+</lcgdict>

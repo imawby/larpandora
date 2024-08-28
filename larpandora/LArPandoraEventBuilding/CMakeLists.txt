@@ -1,6 +1,7 @@
 include_directories( $ENV{PANDORA_INC} )
 include_directories( $ENV{LARPANDORACONTENT_INC} )
 
+add_subdirectory(NuSliceIDData)
 add_subdirectory(SliceIdTools)
 add_subdirectory(fcl)
 
@@ -40,6 +41,7 @@ art_make(
                         ${ROOT_GEOM}
                         ${ROOT_BASIC_LIB_LIST}
                         ${ROOT_GENVECTOR}
+                        larpandora_LArPandoraEventBuilding_NuSliceIDData
             MODULE_LIBRARIES larpandora_LArPandoraEventBuilding
           )
 
