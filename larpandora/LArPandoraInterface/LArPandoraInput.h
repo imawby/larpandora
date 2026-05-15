@@ -74,6 +74,13 @@ namespace lar_pandora {
       double m_recombination_factor;             ///<
     };
 
+      typedef std::map<std::string, geo::WireID> WireOverlap;      
+      typedef std::map<uint64_t, WireOverlap> OverlapTable;
+
+     static uint64_t GetWireHash(geo::WireID const& wireID);
+
+      static WireOverlap GetWireOverlap(const geo::WireID wireA, OverlapTable &overlapTable);      
+
     /**
      *  @brief  Create the Pandora 2D hits from the ART hits
      *

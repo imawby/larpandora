@@ -44,6 +44,83 @@
 
 namespace lar_pandora {
 
+uint64_t LArPandoraInput::GetWireHash(geo::WireID const& wireID)
+{
+    uint64_t cryo  = static_cast<uint64_t>(wireID.Cryostat);
+    uint64_t tpc   = static_cast<uint64_t>(wireID.TPC);
+    uint64_t plane = static_cast<uint64_t>(wireID.Plane);
+    uint64_t wire  = static_cast<uint64_t>(wireID.Wire);
+
+    return (cryo  << 48) |
+           (tpc   << 32) |
+           (plane << 16) |
+           wire;
+}
+
+LArPandoraInput::WireOverlap LArPandoraInput::GetWireOverlap(const geo::WireID wireA, OverlapTable &overlapTable)
+{
+    const uint64_t wireHashA(LArPandoraInput::GetWireHash(wireA));
+
+    if (overlapTable.find(wireHashA) == overlapTable.end())
+    {
+        unsigned int cryo(wireA.Cryostat);
+        unsigned int tpc(wireA.TPC);
+        unsigned int planeA(wireA.Plane);
+
+        // assign other views
+        int planeB(-1), planeC(-1);
+        for (int i : {0, 1, 2})
+        {
+            if (i == int(planeA))
+                continue;
+            else if (planeB < 0)
+                planeB = i;
+            else
+                planeC = i;
+        }
+
+        geo::PlaneID planeIDB(cryo, tpc, (unsigned int)planeB);
+        geo::PlaneID planeIDC(cryo, tpc, (unsigned int)planeC);        
+        
+        // Endpoints of wire in plane A
+        auto const& wireReadoutGeom = art::ServiceHandle<geo::WireReadout const>()->Get();        
+        geo::Point_t start = wireReadoutGeom.Wire(wireA).GetStart();
+        geo::Point_t end = wireReadoutGeom.Wire(wireA).GetEnd();
+
+        // Project endpoints into plane B & C
+        double startB = wireReadoutGeom.WireCoordinate(start.Y(), start.Z(), planeIDB);
+        double endB = wireReadoutGeom.WireCoordinate(end.Y(), end.Z(), planeIDB);
+        double startC = wireReadoutGeom.WireCoordinate(start.Y(), start.Z(), planeIDC);
+        double endC = wireReadoutGeom.WireCoordinate(end.Y(), end.Z(), planeIDC);
+
+        // Convert to integer range
+        int minB = std::floor(std::min(startB, endB));
+        int maxB = std::ceil (std::max(startB, endB));
+        int minC = std::floor(std::min(startC, endC));
+        int maxC = std::ceil (std::max(startC, endC));
+
+        // Padding (important for edge robustness)
+        int pad = 1;
+        minB -= pad; maxB += pad;
+        minC -= pad; maxC += pad;
+
+        // Clamp to valid wire range
+        minB = std::max(0, minB);
+        maxB = std::min((int)wireReadoutGeom.Nwires(planeIDB) - 1, maxB);
+        minC = std::max(0, minC);
+        maxC = std::min((int)wireReadoutGeom.Nwires(planeIDC) - 1, maxC);        
+
+        overlapTable[wireHashA]["min_B"] = geo::WireID(cryo, tpc, planeB, minB);
+        overlapTable[wireHashA]["max_B"] = geo::WireID(cryo, tpc, planeB, maxB);
+        overlapTable[wireHashA]["min_C"] = geo::WireID(cryo, tpc, planeC, minC);
+        overlapTable[wireHashA]["max_C"] = geo::WireID(cryo, tpc, planeC, maxC);
+    }
+
+    return overlapTable.at(wireHashA);
+}
+
+    
+
   void LArPandoraInput::CreatePandoraHits2D(const art::Event& e,
                                             const Settings& settings,
                                             const LArDriftVolumeMap& driftVolumeMap,
@@ -70,6 +147,7 @@ namespace lar_pandora {
 
     lar_content::LArCaloHitFactory caloHitFactory;
 
+    OverlapTable overlapTable;    
     for (auto const& hit : hitVector) {
       const geo::WireID hit_WireID(hit->WireID());
 
@@ -94,6 +172,7 @@ namespace lar_pandora {
       // Get other hit properties here
       const double wire_pitch_cm(wireReadoutGeom.Plane({0, 0}, hit_View).WirePitch()); // cm
       const double mips(LArPandoraInput::GetMips(detProp, settings, hit_Charge, hit_View));
+      WireOverlap wireOverlap(LArPandoraInput::GetWireOverlap(hit_WireID, overlapTable));      
 
       // Create Pandora CaloHit
       lar_content::LArCaloHitParameters caloHitParameters;
@@ -121,6 +200,11 @@ namespace lar_pandora {
           LArPandoraGeometry::GetVolumeID(driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
         caloHitParameters.m_daughterVolumeId = LArPandoraGeometry::GetDaughterVolumeID(
           driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
+        caloHitParameters.m_wireHash = LArPandoraInput::GetWireHash(hit_WireID);
+        caloHitParameters.m_overlapMin1 = LArPandoraInput::GetWireHash(wireOverlap["min_B"]);
+        caloHitParameters.m_overlapMax1 = LArPandoraInput::GetWireHash(wireOverlap["max_B"]);
+        caloHitParameters.m_overlapMin2 = LArPandoraInput::GetWireHash(wireOverlap["min_C"]);
+        caloHitParameters.m_overlapMax2 = LArPandoraInput::GetWireHash(wireOverlap["max_C"]);          
 
         if (hit_View == detType->TargetViewW(hit_WireID.TPC, hit_WireID.Cryostat)) {
           caloHitParameters.m_hitType = pandora::TPC_VIEW_W;
