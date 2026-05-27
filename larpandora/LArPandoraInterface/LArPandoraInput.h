@@ -75,11 +75,19 @@ namespace lar_pandora {
     };
 
       typedef std::map<std::string, geo::WireID> WireOverlap;      
-      typedef std::map<uint64_t, WireOverlap> OverlapTable;
+      typedef std::map<geo::WireID, WireOverlap> OverlapTable;
 
-     static uint64_t GetWireHash(geo::WireID const& wireID);
 
-      static WireOverlap GetWireOverlap(const geo::WireID wireA, OverlapTable &overlapTable);      
+    /**
+     *  @brief  Return the span of wires that intersect the input geo::WireID, 
+     *          caching the result if not already done so
+     *
+     *  @param  wireA the input geo::WireID
+     *  @param[in,out] the geo::WireID->span description mapping
+     *  @param  hitToScoreLabels to receive the mapping between a hit and its predicted score labels, if available
+     *  @param  idToHitMap to receive the mapping from Pandora hit ID to ART hit
+     */
+     static WireOverlap GetWireOverlap(const geo::WireID wireA, OverlapTable &overlapTable);      
 
     /**
      *  @brief  Create the Pandora 2D hits from the ART hits

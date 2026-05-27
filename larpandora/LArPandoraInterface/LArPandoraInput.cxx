@@ -44,24 +44,9 @@
 
 namespace lar_pandora {
 
-uint64_t LArPandoraInput::GetWireHash(geo::WireID const& wireID)
-{
-    uint64_t cryo  = static_cast<uint64_t>(wireID.Cryostat);
-    uint64_t tpc   = static_cast<uint64_t>(wireID.TPC);
-    uint64_t plane = static_cast<uint64_t>(wireID.Plane);
-    uint64_t wire  = static_cast<uint64_t>(wireID.Wire);
-
-    return (cryo  << 48) |
-           (tpc   << 32) |
-           (plane << 16) |
-           wire;
-}
-
 LArPandoraInput::WireOverlap LArPandoraInput::GetWireOverlap(const geo::WireID wireA, OverlapTable &overlapTable)
 {
-    const uint64_t wireHashA(LArPandoraInput::GetWireHash(wireA));
-
-    if (overlapTable.find(wireHashA) == overlapTable.end())
+    if (overlapTable.find(wireA) == overlapTable.end())
     {
         unsigned int cryo(wireA.Cryostat);
         unsigned int tpc(wireA.TPC);
@@ -95,11 +80,11 @@ LArPandoraInput::WireOverlap LArPandoraInput::GetWireOverlap(const geo::WireID w
 
         // Convert to integer range
         int minB = std::floor(std::min(startB, endB));
-        int maxB = std::ceil (std::max(startB, endB));
+        int maxB = std::ceil(std::max(startB, endB));
         int minC = std::floor(std::min(startC, endC));
-        int maxC = std::ceil (std::max(startC, endC));
+        int maxC = std::ceil(std::max(startC, endC));
 
-        // Padding (important for edge robustness)
+        // Padding
         int pad = 1;
         minB -= pad; maxB += pad;
         minC -= pad; maxC += pad;
@@ -110,16 +95,14 @@ LArPandoraInput::WireOverlap LArPandoraInput::GetWireOverlap(const geo::WireID w
         minC = std::max(0, minC);
         maxC = std::min((int)wireReadoutGeom.Nwires(planeIDC) - 1, maxC);        
 
-        overlapTable[wireHashA]["min_B"] = geo::WireID(cryo, tpc, planeB, minB);
-        overlapTable[wireHashA]["max_B"] = geo::WireID(cryo, tpc, planeB, maxB);
-        overlapTable[wireHashA]["min_C"] = geo::WireID(cryo, tpc, planeC, minC);
-        overlapTable[wireHashA]["max_C"] = geo::WireID(cryo, tpc, planeC, maxC);
+        overlapTable[wireA]["min_B"] = geo::WireID(cryo, tpc, planeB, minB);
+        overlapTable[wireA]["max_B"] = geo::WireID(cryo, tpc, planeB, maxB);
+        overlapTable[wireA]["min_C"] = geo::WireID(cryo, tpc, planeC, minC);
+        overlapTable[wireA]["max_C"] = geo::WireID(cryo, tpc, planeC, maxC);
     }
 
-    return overlapTable.at(wireHashA);
+    return overlapTable.at(wireA);
 }
-
-    
 
   void LArPandoraInput::CreatePandoraHits2D(const art::Event& e,
                                             const Settings& settings,
@@ -200,11 +183,14 @@ LArPandoraInput::WireOverlap LArPandoraInput::GetWireOverlap(const geo::WireID w
           LArPandoraGeometry::GetVolumeID(driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
         caloHitParameters.m_daughterVolumeId = LArPandoraGeometry::GetDaughterVolumeID(
           driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
-        caloHitParameters.m_wireHash = LArPandoraInput::GetWireHash(hit_WireID);
-        caloHitParameters.m_overlapMin1 = LArPandoraInput::GetWireHash(wireOverlap["min_B"]);
-        caloHitParameters.m_overlapMax1 = LArPandoraInput::GetWireHash(wireOverlap["max_B"]);
-        caloHitParameters.m_overlapMin2 = LArPandoraInput::GetWireHash(wireOverlap["min_C"]);
-        caloHitParameters.m_overlapMax2 = LArPandoraInput::GetWireHash(wireOverlap["max_C"]);          
+        caloHitParameters.m_plane = hit_WireID.Plane;
+        caloHitParameters.m_wireId = hit_WireID.Wire;        
+        caloHitParameters.m_plane1 = wireOverlap["min_B"].Plane;
+        caloHitParameters.m_minIntersectWire1 = wireOverlap["min_B"].Wire;
+        caloHitParameters.m_maxIntersectWire1 = wireOverlap["max_B"].Wire;
+        caloHitParameters.m_plane2 = wireOverlap["min_C"].Plane;
+        caloHitParameters.m_minIntersectWire2 = wireOverlap["min_C"].Wire;
+        caloHitParameters.m_maxIntersectWire2 = wireOverlap["max_C"].Wire;
 
         if (hit_View == detType->TargetViewW(hit_WireID.TPC, hit_WireID.Cryostat)) {
           caloHitParameters.m_hitType = pandora::TPC_VIEW_W;
@@ -558,9 +544,7 @@ LArPandoraInput::WireOverlap LArPandoraInput::GetWireOverlap(const geo::WireID w
           mcParticleParameters.m_visibleEnergy = mcTruthVisibleEnergy;
           mcParticleParameters.m_endDirection = nuDir;
           mcParticleParameters.m_nTrajPoints = 0;
-          mcParticleParameters.m_trajPointsX = std::vector<float>();
-          mcParticleParameters.m_trajPointsY = std::vector<float>();
-          mcParticleParameters.m_trajPointsZ = std::vector<float>();
+          mcParticleParameters.m_trajPoints = pandora::CartesianPointVector();
           mcParticleParameters.m_momentum =
             pandora::CartesianVector(neutrino.Nu().Px(), neutrino.Nu().Py(), neutrino.Nu().Pz());
           mcParticleParameters.m_vertex =
@@ -725,8 +709,8 @@ LArPandoraInput::WireOverlap LArPandoraInput::GetWireOverlap(const geo::WireID w
               partEndDir = partEndDir.GetUnitVector();
       }
 
-      // Get trajectory points
-      std::vector<float> trajX, trajY, trajZ;
+            // Get trajectory points
+      pandora::CartesianPointVector trajPoints;
       for (int iTraj = 0; iTraj < nTrajPoints; ++iTraj)
       {
           const geo::Point_t point_t(particle->Vx(iTraj),
@@ -737,9 +721,7 @@ LArPandoraInput::WireOverlap LArPandoraInput::GetWireOverlap(const geo::WireID w
 
           if (!tpcID.isValid) { continue; }
 
-          trajX.push_back(point_t.X());
-          trajY.push_back(point_t.Y());
-          trajZ.push_back(point_t.Z());
+          trajPoints.push_back(pandora::CartesianVector(point_t.X(), point_t.Y(), point_t.Z()));
       }
 
       // Create 3D Pandora MC Particle
@@ -752,10 +734,8 @@ LArPandoraInput::WireOverlap LArPandoraInput::GetWireOverlap(const geo::WireID w
         mcParticleParameters.m_nuanceCode = nuanceCode;
         mcParticleParameters.m_visibleEnergy = mcParticleVisEnergy;
         mcParticleParameters.m_endDirection = partEndDir;
-        mcParticleParameters.m_nTrajPoints = trajX.size();
-        mcParticleParameters.m_trajPointsX = trajX;
-        mcParticleParameters.m_trajPointsY = trajY;
-        mcParticleParameters.m_trajPointsZ = trajZ;
+        mcParticleParameters.m_nTrajPoints = trajPoints.size();
+        mcParticleParameters.m_trajPoints = trajPoints;
         if (processMap.find(particle->Process()) != processMap.end()) {
           mcParticleParameters.m_process = processMap[particle->Process()];
         }
