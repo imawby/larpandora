@@ -177,91 +177,139 @@ float TrapeziumRule(const float lowerLimit, const float upperLimit, const float 
 
 /////////////////////////////////////////////////////////////
 
-bool GetInitialDirection(const art::Event &evt, const TVector3 &pfpVertex, const std::vector<art::Ptr<recob::SpacePoint>> &spacepoints, 
-    const std::string &recoModuleLabel, TVector3 &direction)
-{
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(evt);
-    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
+// bool GetInitialDirection(const art::Event &evt, const TVector3 &pfpVertex, const std::vector<art::Ptr<recob::SpacePoint>> &spacepoints, 
+//     const std::string &recoModuleLabel, TVector3 &direction)
+// {
+//     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(evt);
+//     auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
 
-    std::map<geo::View_t, TVector3> avDirectionMap;
+//     std::map<geo::View_t, TVector3> avDirectionMap;
     
-    for (const art::Ptr<recob::SpacePoint> &spacepoint : spacepoints)
-    {
-        // Make sure we have an associated 2D hit
-        const std::vector<art::Ptr<recob::Hit>> assocHits = lar_pandora::PandoraSpacePointUtils::GetHits(spacepoint, evt, recoModuleLabel);
+//     for (const art::Ptr<recob::SpacePoint> &spacepoint : spacepoints)
+//     {
+//         // Make sure we have an associated 2D hit
+//         const std::vector<art::Ptr<recob::Hit>> assocHits = lar_pandora::PandoraSpacePointUtils::GetHits(spacepoint, evt, recoModuleLabel);
 
-        if (assocHits.empty())
-            continue;
+//         if (assocHits.empty())
+//             continue;
 
-        // Only consider the collection view        
-        const art::Ptr<recob::Hit> assocHit = assocHits.front();
-        const geo::View_t hitView(assocHit->View());
+//         // Only consider the collection view        
+//         const art::Ptr<recob::Hit> assocHit = assocHits.front();
+//         const geo::View_t hitView(assocHit->View());
 
-        // 'initial region'
-        const TVector3 spacepointPos = TVector3(spacepoint->position().X(), spacepoint->position().Y(), spacepoint->position().Z());
-        const TVector3 displacement = spacepointPos - pfpVertex;
-        const float mag = displacement.Mag();
+//         // 'initial region'
+//         const TVector3 spacepointPos = TVector3(spacepoint->position().X(), spacepoint->position().Y(), spacepoint->position().Z());
+//         const TVector3 displacement = spacepointPos - pfpVertex;
+//         const float mag = displacement.Mag();
 
-        if (mag <std::numeric_limits<float>::epsilon())
-            continue;
+//         if (mag <std::numeric_limits<float>::epsilon())
+//             continue;
 
-        const float spatialWeight = std::exp(-mag / 10.f);
-        float hitEnergy = lar_pandora::PandoraHitUtils::LifetimeCorrectedTotalHitCharge(clockData, detProp, {assocHit});
+//         const float spatialWeight = std::exp(-mag / 10.f);
+//         float hitEnergy = lar_pandora::PandoraHitUtils::LifetimeCorrectedTotalHitCharge(clockData, detProp, {assocHit});
         
-        if (avDirectionMap.find(hitView) == avDirectionMap.end())
-        {
-            avDirectionMap[hitView] = (displacement.Unit() * hitEnergy * spatialWeight);
-        }
-        else
-        {
-            avDirectionMap[hitView] += (displacement.Unit() * hitEnergy * spatialWeight);
-        }       
-    }
+//         if (avDirectionMap.find(hitView) == avDirectionMap.end())
+//         {
+//             avDirectionMap[hitView] = (displacement.Unit() * hitEnergy * spatialWeight);
+//         }
+//         else
+//         {
+//             avDirectionMap[hitView] += (displacement.Unit() * hitEnergy * spatialWeight);
+//         }       
+//     }
 
-    if (avDirectionMap.size() < 2)
-        return false;
+//     if (avDirectionMap.size() < 2)
+//         return false;
     
-    TVector3 avDirection(0.f, 0.f, 0.f);
-    auto itDir = avDirectionMap.begin();
-    TVector3 avDirection1 = itDir->second.Unit();
-    ++itDir;
-    TVector3 avDirection2 = itDir->second.Unit();
+//     TVector3 avDirection(0.f, 0.f, 0.f);
+//     auto itDir = avDirectionMap.begin();
+//     TVector3 avDirection1 = itDir->second.Unit();
+//     ++itDir;
+//     TVector3 avDirection2 = itDir->second.Unit();
 
-    if (avDirectionMap.size() < 3)
-    {
-        avDirection = (avDirection1 + avDirection2).Unit();
-    }
-    else
-    {
-        ++itDir;
-        TVector3 avDirection3 = itDir->second.Unit();
+//     if (avDirectionMap.size() < 3)
+//     {
+//         avDirection = (avDirection1 + avDirection2).Unit();
+//     }
+//     else
+//     {
+//         ++itDir;
+//         TVector3 avDirection3 = itDir->second.Unit();
 
-        float angle12 = avDirection1.Angle(avDirection2);
-        float angle13 = avDirection1.Angle(avDirection3);
-        float angle23 = avDirection2.Angle(avDirection3);
+//         float angle12 = avDirection1.Angle(avDirection2);
+//         float angle13 = avDirection1.Angle(avDirection3);
+//         float angle23 = avDirection2.Angle(avDirection3);
 
-        if ((angle12 < angle13) && (angle12 < angle23))
-        {
-            avDirection = (avDirection1 + avDirection2).Unit();
-        }
-        else if ((angle13 < angle12) && (angle13 < angle23))
-        {
-            avDirection = (avDirection1 + avDirection3).Unit();
-        }
-        else
-        {
-            avDirection = (avDirection2 + avDirection3).Unit();
-        }   
-    }
+//         if ((angle12 < angle13) && (angle12 < angle23))
+//         {
+//             avDirection = (avDirection1 + avDirection2).Unit();
+//         }
+//         else if ((angle13 < angle12) && (angle13 < angle23))
+//         {
+//             avDirection = (avDirection1 + avDirection3).Unit();
+//         }
+//         else
+//         {
+//             avDirection = (avDirection2 + avDirection3).Unit();
+//         }   
+//     }
 
-    if (avDirection.Mag2() < std::numeric_limits<float>::epsilon())
-        return false;
+//     if (avDirection.Mag2() < std::numeric_limits<float>::epsilon())
+//         return false;
     
-    direction = avDirection.Unit();
+//     direction = avDirection.Unit();
 
-    return true;
+//     return true;
 
-}
+// }
+
+
+    bool GetInitialDirection(const art::Event &evt, const TVector3 &pfpVertex, const std::vector<art::Ptr<recob::SpacePoint>> &spacepoints, 
+                             const std::string &recoModuleLabel, TVector3 &direction)
+    {
+        auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(evt);
+        auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
+
+        TVector3 averageDirection(0.f, 0.f, 0.f);
+    
+        for (const art::Ptr<recob::SpacePoint> &spacepoint : spacepoints)
+            {
+                // Make sure we have an associated 2D hit
+                const std::vector<art::Ptr<recob::Hit>> assocHits = lar_pandora::PandoraSpacePointUtils::GetHits(spacepoint, evt, recoModuleLabel);
+
+                if (assocHits.empty())
+                    continue;
+
+                // Only consider the collection view        
+                const art::Ptr<recob::Hit> assocHit = assocHits.front();
+                const geo::WireID hitWireID = assocHit->WireID();
+                const geo::View_t hitView(assocHit->View());
+                const geo::View_t thisPandoraView(lar_pandora::LArPandoraGeometry::GetGlobalView(hitWireID.Cryostat, hitWireID.TPC, hitView));
+        
+                if ((thisPandoraView != geo::kW) && (thisPandoraView != geo::kY))
+                    continue;
+
+                // 'initial region'
+                const TVector3 spacepointPos = TVector3(spacepoint->position().X(), spacepoint->position().Y(), spacepoint->position().Z());
+                const TVector3 displacement = spacepointPos - pfpVertex;
+                const float mag = displacement.Mag();
+
+                if (mag < std::numeric_limits<float>::epsilon())
+                    continue;
+        
+                const float spatialWeight = std::exp(-mag / 15.f);
+                float hitEnergy = lar_pandora::PandoraHitUtils::LifetimeCorrectedTotalHitCharge(clockData, detProp, {assocHit});
+                averageDirection += (displacement.Unit() * hitEnergy * spatialWeight);
+            }
+
+        if (averageDirection.Mag2() < std::numeric_limits<float>::epsilon())
+            return false;
+    
+        direction = averageDirection.Unit();
+
+        return true;
+
+    }
 
 /////////////////////////////////////////////////////////////
 }

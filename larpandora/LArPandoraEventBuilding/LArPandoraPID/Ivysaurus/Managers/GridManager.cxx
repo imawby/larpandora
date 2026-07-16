@@ -212,28 +212,34 @@ GridManager::GridMap GridManager::ObtainGridMap(const art::Event &evt, const art
     GridManager::GridMap gridMap;
 
     // Get 3D bounding box
-    TVector3 position1(0.f, 0.f, 0.f), position2(0.f, 0.f, 0.f);    
-    if (!this->GetGridExtremalPoints(evt, pfparticle, isStart, position1, position2))
-        return gridMap;
-
-    // Collect spacepoints
-    std::vector<art::Ptr<recob::SpacePoint>> spToConsider;
-    this->GetSpacePointsToConsider(evt, pfparticle, position1, position2, spToConsider);
+    TVector3 seed(0.f, 0.f, 0.f);
+    if (isStart)
+    {
+        if (!lar_pandora::PandoraPFParticleUtils::HasVertex(pfparticle, evt, m_recoModuleLabel)) { return gridMap; }
+        const art::Ptr<recob::Vertex> vertex = lar_pandora::PandoraPFParticleUtils::GetVertex(pfparticle, evt, m_recoModuleLabel);
+        seed = TVector3(vertex->position().X(), vertex->position().Y(), vertex->position().Z());
+    }
+    else
+    {
+        if (!lar_pandora::PandoraPFParticleUtils::HasTrack(pfparticle, evt, m_recoModuleLabel, m_trackModuleLabel)) { return gridMap; }
+        const art::Ptr<recob::Track> track = lar_pandora::PandoraPFParticleUtils::GetTrack(pfparticle, evt, m_recoModuleLabel, m_trackModuleLabel);
+        seed = TVector3(track->End().X(), track->End().Y(), track->End().Z());
+    }
 
     // Now create grids
     for (IvysaurusUtils::PandoraView pandoraView : {IvysaurusUtils::PandoraView::TPC_VIEW_U, 
          IvysaurusUtils::PandoraView::TPC_VIEW_V, IvysaurusUtils::PandoraView::TPC_VIEW_W})
     {
-        const TVector3 projectedPosition1 = ProjectIntoPandoraView(position1, pandoraView);
-        const TVector3 projectedSeed = ProjectIntoPandoraView(position2, pandoraView);
+        TVector3 projectedCenter = ProjectIntoPandoraView(seed, pandoraView);
+        float halfGrid = 0.5f * m_gridSize3D;
 
-        float driftScale(projectedSeed.X() > projectedPosition1.X() ? 1.f : -1.f);
-        float wireScale(projectedSeed.Z() > projectedPosition1.Z() ? 1.f : -1.f);
+        const TVector3 projectedPosition1 = TVector3(projectedCenter.X() - halfGrid, 
+                                               0.f,
+                                      projectedCenter.Z() - halfGrid);
 
-        
-        const TVector3 projectedPosition2 = TVector3(projectedPosition1.X() + (m_gridSize3D * driftScale),
-                                                     0.f,
-                                                     projectedPosition1.Z() + (m_gridSize3D * wireScale));
+        const TVector3 projectedPosition2 = TVector3(projectedCenter.X() + halfGrid,
+                                               0.f,
+                                                     projectedCenter.Z() + halfGrid);
         
         const float driftSpan = projectedPosition2.X() - projectedPosition1.X();
         const float wireSpan = projectedPosition2.Z() - projectedPosition1.Z();
@@ -242,6 +248,16 @@ GridManager::GridMap GridManager::ObtainGridMap(const art::Event &evt, const art
             m_dimensions, m_nSigmaConsidered, m_integralStep)));
     }
 
+    TVector3 position1(0.f, 0.f, 0.f), position2(0.f, 0.f, 0.f);    
+    if (!this->GetGridExtremalPoints(evt, pfparticle, isStart, position1, position2))
+        return gridMap;
+
+    
+    // Collect spacepoints
+    std::vector<art::Ptr<recob::SpacePoint>> spToConsider;
+    this->GetSpacePointsToConsider(evt, pfparticle, position1, position2, spToConsider);
+
+    
     // Now fill hits
     this->FillGrids(evt, spToConsider, gridMap);
 
@@ -287,18 +303,41 @@ bool GridManager::GetStartExtremalPoints(const art::Event &evt, const std::vecto
 {
     if (!lar_pandora::PandoraPFParticleUtils::HasVertex(pfparticle, evt, m_recoModuleLabel)) { return false; }
     const art::Ptr<recob::Vertex> vertex = lar_pandora::PandoraPFParticleUtils::GetVertex(pfparticle, evt, m_recoModuleLabel);
-    const TVector3 vertexPos = TVector3(vertex->position().X(), vertex->position().Y(), vertex->position().Z());
+    TVector3 vertexPos = TVector3(vertex->position().X(), vertex->position().Y(), vertex->position().Z());
 
     TVector3 initialDir3D(0.f, 0.f, 0.f);
-    if (!IvysaurusUtils::GetInitialDirection(evt, vertexPos, spacepointsToConsider, m_recoModuleLabel, initialDir3D))
-        return false;
+    // if (!IvysaurusUtils::GetInitialDirection(evt, vertexPos, spacepointsToConsider, m_recoModuleLabel, initialDir3D))
+    //     return false;
 
-    position1 = TVector3(vertex->position().X(), vertex->position().Y(), vertex->position().Z());
+    if (lar_pandora::PandoraPFParticleUtils::IsTrack(pfparticle, evt, m_recoModuleLabel, m_trackModuleLabel))
+    {
+        if (!lar_pandora::PandoraPFParticleUtils::HasTrack(pfparticle, evt, m_recoModuleLabel, m_trackModuleLabel))
+            return false;
+        const art::Ptr<recob::Track> track = lar_pandora::PandoraPFParticleUtils::GetTrack(pfparticle, evt, m_recoModuleLabel, m_trackModuleLabel);
+        vertexPos = TVector3(track->Start().X(), track->Start().Y(), track->Start().Z());
+        initialDir3D = TVector3(track->StartDirection().X(), track->StartDirection().Y(), track->StartDirection().Z());
+    }
+    else
+    {
+        if (!lar_pandora::PandoraPFParticleUtils::HasShower(pfparticle, evt, m_recoModuleLabel, m_showerModuleLabel))
+            return false;
+
+        const art::Ptr<recob::Shower> shower = lar_pandora::PandoraPFParticleUtils::GetShower(pfparticle, evt, m_recoModuleLabel, m_showerModuleLabel);
+        vertexPos = TVector3(shower->ShowerStart().X(), shower->ShowerStart().Y(), shower->ShowerStart().Z());
+        initialDir3D = TVector3(shower->Direction().X(), shower->Direction().Y(), shower->Direction().Z());
+    }
+
+    // const float halfLength = 0.5f * std::sqrt(2.f) * m_gridSize3D;
+    // position1 = vertexPos - (initialDir3D * halfLength); 
+    // position2 = vertexPos + (initialDir3D * halfLength);
+
+
+    position1 = vertexPos; //TVector3(vertex->position().X(), vertex->position().Y(), vertex->position().Z());
     const float diagonalLength = sqrt(2.0 * (m_gridSize3D * m_gridSize3D));
-    //position2 = position1 + (initialDir3D * diagonalLength);
+    position2 = position1 + (initialDir3D * diagonalLength);
 
-    position1 = position1 - (initialDir3D * diagonalLength * 0.10);
-    position2 = position1 + (initialDir3D * diagonalLength * 0.90);
+    //position1 = position1 - (initialDir3D * diagonalLength * 0.10);
+    //position2 = position1 + (initialDir3D * diagonalLength * 0.90);
     
     return true;
 }
@@ -362,16 +401,33 @@ void GridManager::GetSpacePointsToConsider(const art::Event &evt, const art::Ptr
         spacepoints.insert(spacepoints.end(), childSpacepoints.begin(), childSpacepoints.end());
     }
 
+    // Add in parent
+    unsigned int parentSelf(pfparticle->Parent());
+    const std::vector<art::Ptr<recob::PFParticle>> &pfps = lar_pandora::PandoraEventUtils::GetPFParticles(evt, m_recoModuleLabel);
+    for (art::Ptr<recob::PFParticle> pfp : pfps)
+    {
+        if (pfp->Self() == parentSelf)
+        {
+            if ((pfp->PdgCode() != 12) && (pfp->PdgCode() != 14) && (pfp->PdgCode() != 16))
+            {
+                const std::vector<art::Ptr<recob::SpacePoint>> &parentSpacepoints = lar_pandora::PandoraPFParticleUtils::GetSpacePoints(pfp, evt, m_recoModuleLabel);
+                spacepoints.insert(spacepoints.end(), parentSpacepoints.begin(), parentSpacepoints.end());
+            }
+            
+            break;
+        }
+    }
+
     // Pick up spacepoints between position 1&2
-    TVector3 direction = (position2 - position1).Unit();
-    float mag = (position2 - position1).Mag();
+    //TVector3 direction = (position2 - position1).Unit();
+    //float mag = (position2 - position1).Mag();
     for (const art::Ptr<recob::SpacePoint> &spacepoint : spacepoints)
     {
-        TVector3 displacement = spacepoint->XYZ() - position1;
-        float l = direction.Dot(displacement);
+        // TVector3 displacement = spacepoint->XYZ() - position1;
+        // float l = direction.Dot(displacement);
 
-        if ((l < 0.f) || (l > mag))
-            continue;
+        // if ((l < 0.f) || (l > mag))
+        //     continue;
     
         spToConsider.push_back(spacepoint);
     }

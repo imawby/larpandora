@@ -144,8 +144,8 @@ void TrackVarManager::FillHierarchyInfo(const art::Event &evt, const art::Ptr<re
         if (static_cast<int>(hits.size()) > highestHits)
         {
             highestHits = hits.size();
-            highestHitEnergy = GetChildEnergy(evt, pfparticle);
-            highestHitTrackScore = this->GetTrackScore(evt, pfparticle);
+            highestHitEnergy = GetChildEnergy(evt, childPFP);
+            highestHitTrackScore = this->GetTrackScore(evt, childPFP);
         }
     }
     
@@ -256,7 +256,7 @@ void TrackVarManager::FillWobble(const art::Ptr<recob::Track> &track, TrackVarMa
 
   double angle_var = 0;
   for (size_t i_angle = 0; i_angle < deflection_angles.size(); i_angle++){
-    angle_var = (deflection_angles[i_angle] - angle_mean)*(deflection_angles[i_angle] - angle_mean);
+    angle_var += (deflection_angles[i_angle] - angle_mean)*(deflection_angles[i_angle] - angle_mean);
   }
 
   if (deflection_angles.size() > 1) angle_var /= (deflection_angles.size()-1);
